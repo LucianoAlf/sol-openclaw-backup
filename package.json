@@ -39,5 +39,6 @@
     "moduleNameMapper": {
       "^(.{1,2}/.*).js$": ""
     }
-  }
+  },
+  "type": "module"
 }

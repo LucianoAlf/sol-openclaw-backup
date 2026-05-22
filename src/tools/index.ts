@@ -1,0 +1,94 @@
+import type { Tool } from '../types.js'
+import { readFile, writeFile, listFiles } from './files.js'
+import { executeShell } from './shell.js'
+import { createSupabaseTool } from './supabase.js'
+import { httpRequest } from './http.js'
+import { createWhatsappTools } from './whatsapp.js'
+import { createAudioTools } from './audio.js'
+import { createMediaTools } from './media.js'
+import type { Config } from '../config.js'
+
+export function createToolRegistry(cfg: Config, workspacePath: string): Tool[] {
+  const { sendWhatsapp, sendAudio } = createWhatsappTools(cfg.uazapiUrl, cfg.uazapiToken, cfg.uazapiInstance)
+  const { transcribeAudio } = createAudioTools(cfg.openaiApiKey)
+  const { analyzeImage, storeMedia } = createMediaTools(cfg.openaiApiKey, cfg.supabaseUrl, cfg.supabaseServiceKey)
+  const supabaseQuery = createSupabaseTool(cfg.supabaseUrl, cfg.supabaseServiceKey, {
+    studio: cfg.supabaseStudioId,
+    folha: cfg.supabaseFolhaId,
+    workshops: cfg.supabaseWorkshopsId,
+    extraServiceKey: cfg.supabaseExtraServiceKey,
+  })
+
+  return [
+    {
+      name: 'read_file',
+      description: 'Lê um arquivo do workspace. Args: { path: string }',
+      parameters: { path: { type: 'string' } },
+      handler: (args) => readFile(workspacePath, args as { path: string }),
+    },
+    {
+      name: 'write_file',
+      description: 'Escreve conteúdo em um arquivo do workspace. Args: { path: string, content: string }',
+      parameters: { path: { type: 'string' }, content: { type: 'string' } },
+      handler: (args) => writeFile(workspacePath, args as { path: string; content: string }),
+    },
+    {
+      name: 'list_files',
+      description: 'Lista arquivos de um diretório do workspace. Args: { path: string }',
+      parameters: { path: { type: 'string' } },
+      handler: (args) => listFiles(workspacePath, args as { path: string }),
+    },
+    {
+      name: 'execute_shell',
+      description: 'Executa comando shell na VPS. Args: { command: string }',
+      parameters: { command: { type: 'string' } },
+      handler: (args) => executeShell(args as { command: string }),
+    },
+    {
+      name: 'supabase_query',
+      description: 'Executa SELECT na Supabase. Args: { query: string, project?: "main"|"studio"|"folha"|"workshops" }',
+      parameters: { query: { type: 'string' }, project: { type: 'string' } },
+      handler: (args) => supabaseQuery(args as { query: string; project?: string }),
+    },
+    {
+      name: 'http_request',
+      description: 'Faz requisição HTTP. Args: { url, method?, body?, headers? }',
+      parameters: { url: { type: 'string' } },
+      handler: (args) => httpRequest(args as Parameters<typeof httpRequest>[0]),
+    },
+    {
+      name: 'send_whatsapp',
+      description: 'Envia mensagem WhatsApp. Args: { phone: string, message: string }',
+      parameters: { phone: { type: 'string' }, message: { type: 'string' } },
+      handler: (args) => sendWhatsapp(args as { phone: string; message: string }),
+    },
+    {
+      name: 'transcribe_audio',
+      description: 'Transcreve áudio via Whisper. Args: { audioUrl: string }',
+      parameters: { audioUrl: { type: 'string' } },
+      handler: (args) => transcribeAudio(args as { audioUrl: string }),
+    },
+    {
+      name: 'analyze_image',
+      description: 'Analisa imagem com OpenAI Vision. Args: { imageUrl: string, prompt: string }',
+      parameters: { imageUrl: { type: 'string' }, prompt: { type: 'string' } },
+      handler: (args) => analyzeImage(args as { imageUrl: string; prompt: string }),
+    },
+    {
+      name: 'store_media',
+      description: 'Armazena mídia no Supabase Storage. Args: { phone, type, base64Content, mimeType }',
+      parameters: { phone: { type: 'string' }, type: { type: 'string' }, base64Content: { type: 'string' }, mimeType: { type: 'string' } },
+      handler: (args) => storeMedia(args as any),
+    },
+  ]
+}
+
+export async function executeTool(tools: Tool[], name: string, args: Record<string, unknown>): Promise<string> {
+  const tool = tools.find(t => t.name === name)
+  if (!tool) return `Error: tool desconhecida "${name}"`
+  try {
+    return await tool.handler(args)
+  } catch (e: any) {
+    return `Error em ${name}: ${e.message}`
+  }
+}

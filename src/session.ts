@@ -1,22 +1,55 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, ConversationMessage } from './types.js'
 
+const MASTER_SESSION_LIMIT = 40
+
 export class SessionManager {
-  private db: SupabaseClient
+  private db: SupabaseClient | null = null
 
   constructor(
-    url: string,
-    serviceKey: string,
+    url: string | undefined,
+    serviceKey: string | undefined,
     private caixaId: number,
-    private masterPhone: string
+    private masterPhone: string,
+    private workspacePath: string,
+    private masterAliases: string[] = []
   ) {
-    this.db = createClient(url, serviceKey)
+    if (url && serviceKey) {
+      this.db = createClient(url, serviceKey)
+    } else {
+      console.log('[session] Supabase não configurado — usando apenas armazenamento local para master')
+    }
+  }
+
+  private isMasterSession(phone: string): boolean {
+    return phone === this.masterPhone || this.masterAliases.includes(phone)
+  }
+
+  private masterSessionPath(): string {
+    return path.join(this.workspacePath, 'memory', 'session-master.json')
+  }
+
+  private readMasterSession(): ConversationMessage[] {
+    const p = this.masterSessionPath()
+    if (!fs.existsSync(p)) return []
+    try { return JSON.parse(fs.readFileSync(p, 'utf-8')) } catch { return [] }
+  }
+
+  private writeMasterSession(msgs: ConversationMessage[]): void {
+    const p = this.masterSessionPath()
+    fs.mkdirSync(path.dirname(p), { recursive: true })
+    const trimmed = msgs.slice(-MASTER_SESSION_LIMIT)
+    fs.writeFileSync(p, JSON.stringify(trimmed, null, 2), 'utf-8')
   }
 
   async getContact(phone: string): Promise<Contact | null> {
-    if (phone === this.masterPhone) {
+    if (this.isMasterSession(phone)) {
       return { phone, display_name: 'Admin', type: 'master', unit: 'all', emusys_id: null, is_master: true, notes: null }
     }
+
+    if (!this.db) return null
 
     const { data: aluno } = await this.db
       .from('aluno_contatos')
@@ -53,7 +86,7 @@ export class SessionManager {
   }
 
   private async getOrCreateConversa(phone: string, nome: string): Promise<string> {
-    const { data: existing } = await this.db
+    const { data: existing } = await this.db!
       .from('admin_conversas')
       .select('id')
       .eq('caixa_id', this.caixaId)
@@ -61,7 +94,7 @@ export class SessionManager {
       .maybeSingle()
     if (existing) return existing.id
 
-    const { data: created, error } = await this.db
+    const { data: created, error } = await this.db!
       .from('admin_conversas')
       .insert({ caixa_id: this.caixaId, telefone_externo: phone, nome_externo: nome, status: 'aberta', nao_lidas: 0 })
       .select('id')
@@ -71,7 +104,14 @@ export class SessionManager {
     return created.id
   }
 
-  async getHistory(phone: string, limit = 20): Promise<ConversationMessage[]> {
+  async getHistory(phone: string, limit = 10): Promise<ConversationMessage[]> {
+    if (this.isMasterSession(phone)) {
+      const msgs = this.readMasterSession()
+      return msgs.slice(-limit)
+    }
+
+    if (!this.db) return []
+
     const { data: conversa } = await this.db
       .from('admin_conversas')
       .select('id')
@@ -101,6 +141,15 @@ export class SessionManager {
     role: 'user' | 'assistant',
     content: string
   ): Promise<void> {
+    if (this.isMasterSession(phone)) {
+      const msgs = this.readMasterSession()
+      msgs.push({ role, content })
+      this.writeMasterSession(msgs)
+      return
+    }
+
+    if (!this.db) { console.log('[session] sem Supabase, mensagem não salva para', phone); return }
+
     const conversaId = await this.getOrCreateConversa(phone, nome)
     const direcao = role === 'assistant' ? 'saida' : 'entrada'
     const remetente = role === 'assistant' ? 'sol' : 'aluno'

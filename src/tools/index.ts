@@ -6,18 +6,39 @@ import { httpRequest } from './http.js'
 import { createWhatsappTools } from './whatsapp.js'
 import { createAudioTools } from './audio.js'
 import { createMediaTools } from './media.js'
+import { createLareportTools } from './lareport.js'
 import type { Config } from '../config.js'
 
-export function createToolRegistry(cfg: Config, workspacePath: string): Tool[] {
+export type ToolContext =
+  | { role: 'master' }
+  | { role: 'aluno'; alunoId: number }
+
+export function createToolRegistry(cfg: Config, workspacePath: string, context: ToolContext): Tool[] {
   const { sendWhatsapp, sendAudio } = createWhatsappTools(cfg.uazapiUrl, cfg.uazapiToken, cfg.uazapiInstance)
   const { transcribeAudio } = createAudioTools(cfg.openaiApiKey)
-  const { analyzeImage, storeMedia } = createMediaTools(cfg.openaiApiKey, cfg.supabaseUrl, cfg.supabaseServiceKey)
-  const supabaseQuery = createSupabaseTool(cfg.supabaseUrl, cfg.supabaseServiceKey, {
-    studio: cfg.supabaseStudioId,
-    folha: cfg.supabaseFolhaId,
-    workshops: cfg.supabaseWorkshopsId,
-    extraServiceKey: cfg.supabaseExtraServiceKey,
-  })
+
+  if (context.role === 'aluno') {
+    const lareportUrl = cfg.supabaseUrl!
+    const lareportKey = cfg.lareportAnonKey!
+    return createLareportTools(lareportUrl, lareportKey, context.alunoId, cfg.masterPhone, sendWhatsapp)
+  }
+
+  // master: conjunto completo
+  const hasSupabase = !!(cfg.supabaseUrl && cfg.supabaseServiceKey)
+  const mediaTools = hasSupabase
+    ? createMediaTools(cfg.openaiApiKey, cfg.supabaseUrl!, cfg.supabaseServiceKey!)
+    : null
+  const supabaseQuery = hasSupabase
+    ? createSupabaseTool(cfg.supabaseUrl!, cfg.supabaseServiceKey!, {
+        studio: cfg.supabaseStudioId,
+        folha: cfg.supabaseFolhaId,
+        workshops: cfg.supabaseWorkshopsId,
+        extraServiceKey: cfg.supabaseExtraServiceKey,
+      })
+    : async (_args: any) => 'Supabase não configurado.'
+
+  const analyzeImage = mediaTools?.analyzeImage ?? (async (_args: any) => 'Supabase não configurado.')
+  const storeMedia = mediaTools?.storeMedia ?? (async (_args: any) => 'Supabase não configurado.')
 
   return [
     {

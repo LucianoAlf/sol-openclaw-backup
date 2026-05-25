@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export function createWhatsappTools(uazapiUrl: string, uazapiToken: string, instance: string, openaiApiKey?: string) {
+export function createWhatsappTools(uazapiUrl: string, uazapiToken: string, instance: string) {
   const headers = { token: uazapiToken }
 
   async function markRead(messageId: string): Promise<void> {
@@ -41,19 +41,5 @@ export function createWhatsappTools(uazapiUrl: string, uazapiToken: string, inst
     }
   }
 
-  async function getAudioUrl(messageId: string): Promise<string | null> {
-    try {
-      const res = await axios.post(
-        `${uazapiUrl}/message/download`,
-        { id: messageId, generate_mp3: true, return_link: true },
-        { headers }
-      )
-      return (res.data as any).fileURL as string ?? null
-    } catch (e: any) {
-      console.error('[whatsapp] getAudioUrl error:', e.message)
-      return null
-    }
-  }
-
-  return { sendWhatsapp, sendAudio, markRead, setPresence, getAudioUrl }
+  return { sendWhatsapp, sendAudio, markRead, setPresence }
 }

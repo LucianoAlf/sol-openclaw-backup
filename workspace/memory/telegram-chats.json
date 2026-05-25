@@ -1,0 +1,22 @@
+{
+  "8623872779": {
+    "chat_id": "8623872779",
+    "chat_type": "private",
+    "first_name": "Openclaw",
+    "last_text": "entao confiogure, rode um backup agora logo para testar tammbem",
+    "last_seen_at": "2026-05-25T21:31:18.920Z"
+  },
+  "-5208643046": {
+    "chat_id": "-5208643046",
+    "chat_type": "group",
+    "first_name": "Openclaw",
+    "last_seen_at": "2026-05-22T22:57:00.593Z"
+  },
+  "-1003443031930": {
+    "chat_id": "-1003443031930",
+    "chat_type": "supergroup",
+    "first_name": "Openclaw",
+    "last_text": "Oi sol, ta viva?",
+    "last_seen_at": "2026-05-24T14:18:18.033Z"
+  }
+}

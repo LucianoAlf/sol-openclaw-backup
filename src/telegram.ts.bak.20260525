@@ -1,0 +1,214 @@
+import axios from 'axios'
+import * as fs from 'fs'
+import * as path from 'path'
+import type { Config } from './config.js'
+import { enqueueMessage, processIncomingMessage } from './message-processor.js'
+import { SessionManager } from './session.js'
+import type { Contact, IncomingMessage } from './types.js'
+
+interface TelegramChat {
+  id: number
+  first_name?: string
+  last_name?: string
+  username?: string
+  type?: string
+}
+
+interface TelegramMessage {
+  message_id: number
+  chat: TelegramChat
+  from?: TelegramChat & { is_bot?: boolean }
+  text?: string
+}
+
+interface TelegramUpdate {
+  update_id: number
+  message?: TelegramMessage
+}
+
+interface TelegramApiResponse<T> {
+  ok: boolean
+  result: T
+  description?: string
+}
+
+function displayName(message: TelegramMessage): string {
+  const user = message.from ?? message.chat
+  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
+  return name || user.username || String(message.chat.id)
+}
+
+function offsetPath(workspacePath: string): string {
+  return path.join(workspacePath, 'memory', 'telegram-offset.json')
+}
+
+function readOffset(workspacePath: string): number | undefined {
+  const p = offsetPath(workspacePath)
+  if (!fs.existsSync(p)) return undefined
+  try {
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf-8')) as { offset?: number }
+    return parsed.offset
+  } catch {
+    return undefined
+  }
+}
+
+function writeOffset(workspacePath: string, offset: number): void {
+  const p = offsetPath(workspacePath)
+  fs.mkdirSync(path.dirname(p), { recursive: true })
+  fs.writeFileSync(p, JSON.stringify({ offset }, null, 2), 'utf-8')
+}
+
+function chatsPath(workspacePath: string): string {
+  return path.join(workspacePath, 'memory', 'telegram-chats.json')
+}
+
+function recordTelegramChat(workspacePath: string, message: TelegramMessage): void {
+  const p = chatsPath(workspacePath)
+  const user = message.from ?? message.chat
+  const chatId = String(message.chat.id)
+  let chats: Record<string, unknown> = {}
+
+  if (fs.existsSync(p)) {
+    try {
+      chats = JSON.parse(fs.readFileSync(p, 'utf-8')) as Record<string, unknown>
+    } catch {
+      chats = {}
+    }
+  }
+
+  chats[chatId] = {
+    chat_id: chatId,
+    chat_type: message.chat.type,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    username: user.username,
+    last_text: message.text,
+    last_seen_at: new Date().toISOString(),
+  }
+
+  fs.mkdirSync(path.dirname(p), { recursive: true })
+  fs.writeFileSync(p, JSON.stringify(chats, null, 2), 'utf-8')
+}
+
+function chunkTelegramText(text: string): string[] {
+  const chunks: string[] = []
+  for (let i = 0; i < text.length; i += 3900) {
+    chunks.push(text.slice(i, i + 3900))
+  }
+  return chunks.length ? chunks : ['']
+}
+
+function telegramMasterContact(cfg: Config, chatId: string): Contact | undefined {
+  if (!cfg.telegramMasterChatId || cfg.telegramMasterChatId !== chatId) return undefined
+  return {
+    phone: `tg:${chatId}`,
+    display_name: 'Admin',
+    type: 'master',
+    unit: 'all',
+    emusys_id: null,
+    is_master: true,
+    notes: null,
+  }
+}
+
+export async function startTelegramBot(cfg: Config, session: SessionManager): Promise<void> {
+  if (!cfg.telegramBotToken) {
+    console.log('[telegram] token ausente; bot desativado')
+    return
+  }
+
+  const baseUrl = `https://api.telegram.org/bot${cfg.telegramBotToken}`
+  let offset = readOffset(cfg.workspacePath)
+  let stopped = false
+
+  async function sendTelegram(chatId: number, text: string): Promise<void> {
+    for (const chunk of chunkTelegramText(text)) {
+      await axios.post(`${baseUrl}/sendMessage`, {
+        chat_id: chatId,
+        text: chunk,
+      })
+      console.log(`[telegram] resposta enviada para ${chatId}`)
+    }
+  }
+
+  async function handleUpdate(update: TelegramUpdate): Promise<void> {
+    const message = update.message
+    if (!message || message.from?.is_bot) return
+
+    console.log(`[telegram] update ${update.update_id} recebido de ${message.chat.id}`)
+    recordTelegramChat(cfg.workspacePath, message)
+
+    const chatId = String(message.chat.id)
+    const senderId = `tg:${chatId}`
+    const text = message.text?.trim()
+    if (!text) {
+      try { await sendTelegram(message.chat.id, 'Por enquanto eu consigo responder textos por aqui.') } catch {}
+      return
+    }
+
+    if (text === '/status' && telegramMasterContact(cfg, chatId)) {
+      await sendTelegram(message.chat.id, [
+        'Status: Telegram ativo.',
+        'Bot: @Sol_adm_bot.',
+        `Master: ${chatId}.`,
+        'Container: sol-adm online.',
+      ].join('\n'))
+      return
+    }
+
+    const incoming: IncomingMessage = {
+      phone: senderId,
+      type: 'text',
+      text,
+    }
+
+    await enqueueMessage(senderId, async () => {
+      try {
+        await processIncomingMessage({
+          channel: 'telegram',
+          senderId,
+          senderName: displayName(message),
+          message: incoming,
+          session,
+          cfg,
+          contactOverride: telegramMasterContact(cfg, chatId),
+          sendText: async (response) => sendTelegram(message.chat.id, response),
+        })
+      } catch (e: any) {
+        console.error('[telegram] erro ao processar mensagem:', e.message)
+        await sendTelegram(message.chat.id, 'Tive um problema interno ao processar essa mensagem. Pode tentar de novo?')
+      }
+    })
+  }
+
+  async function poll(): Promise<void> {
+    while (!stopped) {
+      try {
+        const res = await axios.get<TelegramApiResponse<TelegramUpdate[]>>(`${baseUrl}/getUpdates`, {
+          params: {
+            timeout: 50,
+            offset,
+            allowed_updates: JSON.stringify(['message']),
+          },
+          timeout: 60000,
+        })
+
+        for (const update of res.data.result) {
+          offset = update.update_id + 1
+          writeOffset(cfg.workspacePath, offset)
+          try { await handleUpdate(update) } catch (e) { console.error('[telegram] erro em handleUpdate:', e.message) }
+        }
+      } catch (e: any) {
+        const detail = e.response?.data?.description ?? e.message
+        console.error('[telegram] erro no polling:', detail)
+        await new Promise(resolve => setTimeout(resolve, 5000))
+      }
+    }
+  }
+
+  const me = await axios.get<TelegramApiResponse<{ username?: string }>>(`${baseUrl}/getMe`)
+  console.log(`[telegram] bot ativo${me.data.result.username ? `: @${me.data.result.username}` : ''}`)
+
+  void poll()
+}

@@ -43,8 +43,7 @@ export async function startScheduler(cfg: Config): Promise<void> {
       console.log(`[heartbeat] executando: ${job.description}`)
       try {
         const systemPrompt = buildSystemPrompt('processo', cfg.workspacePath)
-        const tools = createToolRegistry(cfg, cfg.workspacePath)
-        await runLLM({ systemPrompt, messages: [{ role: 'user', content: job.description }], tools })
+        await runLLM({ systemPrompt, messages: [{ role: 'user', content: job.description }] })
       } catch (e) {
         console.error(`[heartbeat] erro em "${job.description}":`, e)
       }

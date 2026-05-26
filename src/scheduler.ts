@@ -189,7 +189,7 @@ async function fetchHeartbeatRows(cfg: Config, kind: KnownHeartbeatKind): Promis
         with ultimas as (
           select aluno_id, max(data_aula) as ultima_aula
           from aluno_presenca
-          where status in ('presente', 'falta', 'pendente', 'agendada', 'remarcada')
+          where status in ('presente', 'ausente')
           group by aluno_id
         )
         select

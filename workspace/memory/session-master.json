@@ -1,17 +1,5 @@
 [
   {
-    "role": "assistant",
-    "content": "Não foi criado: o ambiente desta sessão está em `read-only`.\n\nErro:\n`/tmp/teste_write.txt: Read-only file system`"
-  },
-  {
-    "role": "user",
-    "content": "cria o arquivo /tmp/teste_write.txt com o texto hello world"
-  },
-  {
-    "role": "assistant",
-    "content": "Não foi criado: o ambiente desta sessão está em `read-only`.\n\nErro:\n`/tmp/teste_write.txt: Read-only file system`"
-  },
-  {
     "role": "user",
     "content": "cria o arquivo /tmp/teste_write.txt com o texto hello world"
   },
@@ -158,5 +146,17 @@
   {
     "role": "user",
     "content": "O que cria um heartbeat também, verificando se o cron de backup rodou e me informando se ele rodou com sucesso ou se deu algum erro."
+  },
+  {
+    "role": "assistant",
+    "content": "Configurado e testado: backup diário monitora sucesso/erro e reporta no tópico às `21:10`.\n\n- Backup roda às `21:00`.\n- Status salvo em `memory/backup-status.json`.\n- Relatório vai para o tópico Telegram salvo.\n- Teste manual retornou `SUCESSO`.\n- Backup também foi corrigido para usar o repo certo: `/opt/sol-adm`."
+  },
+  {
+    "role": "user",
+    "content": "Sobre esses crons que você rodou aí, tem 402 sumidos, tem certeza? Eu acho que você fez errado. Verifica novamente aí, por favor."
+  },
+  {
+    "role": "assistant",
+    "content": "Você tinha razão: o critério estava errado; corrigi e a contagem revisada é `229`, não `402/407`.\n\n- O erro: `ausente` não estava sendo contado como aula registrada.\n- Ativos no banco: `1.223`.\n- Sumidos corretos: `229` (`147` com 14+ dias + `82` sem registro).\n- `npm run build` passou.\n- Pra ativar no processo atual, confirma com `/restart`."
   }
 ]

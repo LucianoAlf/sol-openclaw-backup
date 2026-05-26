@@ -16,7 +16,7 @@ NÃO envie nada para os alunos quando HEARTBEAT_DRY_RUN=true.
 
 ## Alunos sumidos
 <!-- cron: 0 10 * * 1 -->
-Consulte no Supabase os alunos ativos sem presença/aula registrada há 14+ dias.
+Consulte no Supabase os alunos ativos sem aula registrada (presente ou ausente) há 14+ dias.
 Para cada um, monte a mensagem que seria enviada ao aluno.
 Envie UM relatório consolidado para o tópico Telegram salvo em `memory/heartbeat-telegram-target.json` com total, lista de alunos e exemplo da mensagem.
 NÃO envie nada para os alunos quando HEARTBEAT_DRY_RUN=true.

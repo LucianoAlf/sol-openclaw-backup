@@ -36,7 +36,6 @@ Envie UM relatório consolidado para o tópico Telegram salvo em `memory/heartbe
 NÃO envie nada para os alunos quando HEARTBEAT_DRY_RUN=true.
 
 ## Monitoramento do backup diário
-<!-- cron: 10 21 * * * -->
 Verificar se o cron de backup diário terminou com sucesso.
 O cron do sistema executa `/opt/sol-adm/scripts/run-backup-with-status.sh` às 21:00 e salva o resultado em `memory/backup-status.json`.
 Às 21:10, `/opt/sol-adm/scripts/report-backup-status.sh` envia no tópico Telegram salvo em `memory/heartbeat-telegram-target.json`:

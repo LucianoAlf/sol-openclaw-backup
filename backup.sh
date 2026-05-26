@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKDIR="/opt/sol-adm/workspace"
+WORKDIR="/opt/sol-adm"
 SSH_KEY="/opt/sol-adm/.ssh/backup_deploy_key"
 
 export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"

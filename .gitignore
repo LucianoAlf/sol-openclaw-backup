@@ -4,3 +4,4 @@ dist/
 .env.*
 *.env.local
 .ssh/
+workspace/memory/backup-status.json

@@ -7,6 +7,7 @@ import { runLLM } from './llm.js'
 import { createWhatsappTools } from './tools/whatsapp.js'
 import { createAudioTools } from './tools/audio.js'
 import type { Config } from './config.js'
+import { notifyMasterError } from './notify.js'
 
 const queues = new Map<string, Promise<void>>()
 
@@ -51,6 +52,7 @@ export async function registerWebhook(app: FastifyInstance, session: SessionMana
     }
 
     enqueue(phone, async () => {
+      try {
       console.log(`[webhook] processando ${phone}`)
 
       if (messageId) await wa.markRead(messageId)
@@ -64,7 +66,7 @@ export async function registerWebhook(app: FastifyInstance, session: SessionMana
 
       const classified = classifyMessage(msg, contact)
       const history = await session.getHistory(phone)
-      const systemPrompt = buildSystemPrompt(classified.mode, cfg.workspacePath)
+      const systemPrompt = await buildSystemPrompt(classified.mode, cfg.workspacePath, contact)
       let userText = msg.text ?? msg.caption ?? ''
       if (msg.type === 'audio' && messageId) {
         console.log(`[webhook] transcrevendo áudio, messageId: ${messageId}`)
@@ -98,6 +100,10 @@ export async function registerWebhook(app: FastifyInstance, session: SessionMana
       console.log(`[webhook] resposta LLM: "${result.response.slice(0, 80)}"`)
       if (result.response) {
         await wa.sendWhatsapp({ phone, message: result.response })
+      }
+      } catch (e: any) {
+        console.error('[webhook] erro ao processar mensagem:', e.message)
+        void notifyMasterError(cfg, { channel: 'webhook', sender: phone, chatId: phone, text: msg.text, error: e })
       }
     })
   })

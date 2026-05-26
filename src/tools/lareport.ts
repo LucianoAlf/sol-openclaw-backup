@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Tool } from '../types.js'
 
-async function execReadonly(supabase: ReturnType<typeof createClient>, sql: string): Promise<any[]> {
+async function execReadonly(supabase: any, sql: string): Promise<any[]> {
   const { data, error } = await supabase.rpc('exec_readonly_sql', { query: sql })
   if (error) throw new Error(error.message)
   return (data as any[]) ?? []

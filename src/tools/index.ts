@@ -7,6 +7,7 @@ import { createWhatsappTools } from './whatsapp.js'
 import { createAudioTools } from './audio.js'
 import { createMediaTools } from './media.js'
 import { createLareportTools } from './lareport.js'
+import { readLogs, editEnv, restartSelf } from './ops.js'
 import type { Config } from '../config.js'
 
 export type ToolContext =
@@ -100,6 +101,24 @@ export function createToolRegistry(cfg: Config, workspacePath: string, context: 
       description: 'Armazena mídia no Supabase Storage. Args: { phone, type, base64Content, mimeType }',
       parameters: { phone: { type: 'string' }, type: { type: 'string' }, base64Content: { type: 'string' }, mimeType: { type: 'string' } },
       handler: (args) => storeMedia(args as any),
+    },
+    {
+      name: 'read_logs',
+      description: 'Lê logs do próprio container (docker logs sol-adm). Args: { lines?: number (1-500, default 80), grep?: string (regex case-insensitive) }',
+      parameters: { lines: { type: 'number' }, grep: { type: 'string' } },
+      handler: async (args) => readLogs(args as { lines?: number; grep?: string }),
+    },
+    {
+      name: 'edit_env',
+      description: 'Edita uma variável em /app/.env (apenas chaves whitelistadas: TELEGRAM_MASTER_CHAT_ID, HEARTBEAT_DRY_RUN, LOG_LEVEL, DEBUG). Args: { key: string, value: string }. Não aplica até restart_self ser chamado.',
+      parameters: { key: { type: 'string' }, value: { type: 'string' } },
+      handler: async (args) => editEnv(args as { key: string; value: string }),
+    },
+    {
+      name: 'restart_self',
+      description: 'Reinicia o próprio container (docker restart sol-adm). Args: { confirm: boolean }. Use após edit_env. A thread LLM atual será perdida — avise o usuário antes.',
+      parameters: { confirm: { type: 'boolean' } },
+      handler: async (args) => restartSelf(args as { confirm?: boolean }),
     },
   ]
 }

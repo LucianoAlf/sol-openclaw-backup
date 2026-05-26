@@ -176,7 +176,7 @@ export async function processIncomingMessage(args: ProcessIncomingMessageArgs): 
 
   const classified = classifyMessage(message, contact)
   const history = await session.getHistory(senderId)
-  const systemPrompt = buildSystemPrompt(classified.mode, cfg.workspacePath)
+  const systemPrompt = await buildSystemPrompt(classified.mode, cfg.workspacePath, contact)
   const tools = createToolRegistry(cfg, cfg.workspacePath, { role: 'master' })
 
   let userText = message.text ?? message.caption ?? ''

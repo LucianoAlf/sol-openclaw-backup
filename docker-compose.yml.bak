@@ -9,7 +9,6 @@ services:
       - ./workspace:/workspace
       - ./src:/app/src
       - ./.env:/app/.env
-      - /var/run/docker.sock:/var/run/docker.sock
       - codex-auth:/root/.codex
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3001/health"]

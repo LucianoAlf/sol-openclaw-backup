@@ -4,7 +4,8 @@ import * as path from 'path'
 import type { Config } from './config.js'
 import { enqueueMessage, processIncomingMessage } from './message-processor.js'
 import { SessionManager } from './session.js'
-import type { Contact, IncomingMessage } from './types.js'
+import type { Contact, IncomingMessage } from "./types.js"
+import { notifyMasterError } from "./notify.js"
 
 interface TelegramChat {
   id: number
@@ -24,12 +25,15 @@ interface PhotoSize {
 
 interface TelegramMessage {
   message_id: number
+  message_thread_id?: number
   chat: TelegramChat
   from?: TelegramChat & { is_bot?: boolean }
   text?: string
   caption?: string
   photo?: PhotoSize[]
   document?: { file_id: string; mime_type?: string }
+  voice?: { file_id: string; duration: number; mime_type?: string }
+  audio?: { file_id: string; duration: number; mime_type?: string }
 }
 
 interface TelegramUpdate {
@@ -133,10 +137,11 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
   let offset = readOffset(cfg.workspacePath)
   let stopped = false
 
-  async function sendTelegram(chatId: number, text: string): Promise<void> {
+  async function sendTelegram(chatId: number, text: string, threadId?: number): Promise<void> {
     for (const chunk of chunkTelegramText(text)) {
       await axios.post(`${baseUrl}/sendMessage`, {
         chat_id: chatId,
+        ...(threadId ? { message_thread_id: threadId } : {}),
         text: chunk,
       })
       console.log(`[telegram] resposta enviada para ${chatId}`)
@@ -144,8 +149,12 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
   }
 
 
-  async function sendTyping(chatId: number): Promise<() => void> {
-    const send = () => axios.post(`${baseUrl}/sendChatAction`, { chat_id: chatId, action: 'typing' }).catch(() => {})
+  async function sendTyping(chatId: number, threadId?: number): Promise<() => void> {
+    const send = () => axios.post(`${baseUrl}/sendChatAction`, {
+      chat_id: chatId,
+      ...(threadId ? { message_thread_id: threadId } : {}),
+      action: 'typing',
+    }).catch(() => {})
     await send()
     const interval = setInterval(send, 4000)
     return () => clearInterval(interval)
@@ -159,8 +168,11 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
     recordTelegramChat(cfg.workspacePath, message)
 
     const chatId = String(message.chat.id)
-    const senderId = `tg:${chatId}`
+    const fromId = message.from?.id ? String(message.from.id) : undefined
+    const masterContact = telegramMasterContact(cfg, fromId ?? chatId) ?? telegramMasterContact(cfg, chatId)
+    const senderId = masterContact ? `tg:${cfg.telegramMasterChatId}` : `tg:${chatId}`
     const text = message.text?.trim() ?? message.caption?.trim()
+    const threadId = message.message_thread_id
 
     // Resolver URL de imagem via Telegram getFile API
     let imageUrl: string | undefined
@@ -176,30 +188,47 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
       } catch {}
     }
 
-    if (!text && !imageUrl) {
-      try { await sendTelegram(message.chat.id, 'Por enquanto só processo textos e imagens por aqui.') } catch {}
+    // Resolver URL de áudio (voice note ou audio file)
+    let audioUrl: string | undefined
+    const audioFileId = message.voice?.file_id ?? message.audio?.file_id
+    if (audioFileId) {
+      try {
+        const fileRes = await axios.get<{ ok: boolean; result: { file_path: string } }>(
+          `${baseUrl}/getFile?file_id=${audioFileId}`
+        )
+        if (fileRes.data.ok) {
+          audioUrl = `https://api.telegram.org/file/bot${cfg.telegramBotToken}/${fileRes.data.result.file_path}`
+        }
+      } catch {}
+    }
+
+    if (!text && !imageUrl && !audioUrl) {
+      try { await sendTelegram(message.chat.id, 'Por enquanto só processo textos, imagens e áudios por aqui.', threadId) } catch {}
       return
     }
 
-    if (text === '/status' && telegramMasterContact(cfg, chatId)) {
+    if (text === '/status' && masterContact) {
       await sendTelegram(message.chat.id, [
         'Status: Telegram ativo.',
         'Bot: @Sol_adm_bot.',
-        `Master: ${chatId}.`,
+        `Master: ${fromId ?? chatId}.`,
         'Container: sol-adm online.',
-      ].join('\n'))
+      ].join('\n'), threadId)
       return
     }
 
     const incoming: IncomingMessage = {
       phone: senderId,
-      type: imageUrl ? 'image' : 'text',
+      type: audioUrl ? 'audio' : imageUrl ? 'image' : 'text',
       text,
       imageUrl,
+      audioUrl,
     }
 
-    await enqueueMessage(senderId, async () => {
-      const stopTyping = await sendTyping(message.chat.id)
+    const queueKey = threadId ? `${senderId}:thread:${threadId}` : senderId
+
+    await enqueueMessage(queueKey, async () => {
+      const stopTyping = await sendTyping(message.chat.id, threadId)
       try {
         await processIncomingMessage({
           channel: 'telegram',
@@ -208,12 +237,12 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
           message: incoming,
           session,
           cfg,
-          contactOverride: telegramMasterContact(cfg, chatId),
-          sendText: async (response) => sendTelegram(message.chat.id, response),
+          contactOverride: masterContact,
+          sendText: async (response) => sendTelegram(message.chat.id, response, threadId),
         })
       } catch (e: any) {
-        console.error('[telegram] erro ao processar mensagem:', e.message)
-        await sendTelegram(message.chat.id, 'Tive um problema interno ao processar essa mensagem. Pode tentar de novo?')
+        console.error('[telegram] erro ao processar mensagem:', e.message); void notifyMasterError(cfg, { channel: 'telegram', sender: displayName(message), chatId: String(message.chat.id), text: text || (audioUrl ? '[audio]' : imageUrl ? '[image]' : ''), error: e })
+        await sendTelegram(message.chat.id, 'Tive um problema interno ao processar essa mensagem. Pode tentar de novo?', threadId)
       } finally {
         stopTyping()
       }
@@ -235,7 +264,10 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
         for (const update of res.data.result) {
           offset = update.update_id + 1
           writeOffset(cfg.workspacePath, offset)
-          try { await handleUpdate(update) } catch (e: any) { console.error('[telegram] erro em handleUpdate:', e.message) }
+          void handleUpdate(update).catch((e: any) => {
+            console.error('[telegram] erro em handleUpdate:', e.message)
+            void notifyMasterError(cfg, { channel: 'telegram-update', error: e })
+          })
         }
       } catch (e: any) {
         const detail = e.response?.data?.description ?? e.message

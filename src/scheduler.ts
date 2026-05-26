@@ -80,8 +80,35 @@ function chunkTelegramText(text: string): string[] {
   return chunks.length ? chunks : ['']
 }
 
+function heartbeatTargetPath(workspacePath: string): string {
+  return path.join(workspacePath, 'memory', 'heartbeat-telegram-target.json')
+}
+
+function readHeartbeatTarget(cfg: Config): { chatId?: string; threadId?: number } {
+  const fallback = {
+    chatId: cfg.heartbeatTelegramChatId ?? cfg.telegramMasterChatId,
+    threadId: cfg.heartbeatTelegramThreadId,
+  }
+  const p = heartbeatTargetPath(cfg.workspacePath)
+  if (!fs.existsSync(p)) return fallback
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf-8')) as {
+      chat_id?: string | number
+      message_thread_id?: string | number
+    }
+    return {
+      chatId: parsed.chat_id ? String(parsed.chat_id) : fallback.chatId,
+      threadId: parsed.message_thread_id ? Number(parsed.message_thread_id) : fallback.threadId,
+    }
+  } catch {
+    return fallback
+  }
+}
+
 async function sendTelegramReport(cfg: Config, text: string): Promise<void> {
-  if (!cfg.telegramBotToken || !cfg.telegramMasterChatId) {
+  const target = readHeartbeatTarget(cfg)
+  if (!cfg.telegramBotToken || !target.chatId) {
     console.warn('[heartbeat] Telegram não configurado; relatório não enviado')
     return
   }
@@ -89,7 +116,8 @@ async function sendTelegramReport(cfg: Config, text: string): Promise<void> {
   const baseUrl = `https://api.telegram.org/bot${cfg.telegramBotToken}`
   for (const chunk of chunkTelegramText(text)) {
     await axios.post(`${baseUrl}/sendMessage`, {
-      chat_id: cfg.telegramMasterChatId,
+      chat_id: target.chatId,
+      ...(target.threadId ? { message_thread_id: target.threadId } : {}),
       text: chunk,
     })
   }

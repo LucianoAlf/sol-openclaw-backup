@@ -116,9 +116,9 @@ export function createToolRegistry(cfg: Config, workspacePath: string, context: 
     },
     {
       name: 'restart_self',
-      description: 'Reinicia o próprio container (docker restart sol-adm). Args: { confirm: boolean }. Use após edit_env. A thread LLM atual será perdida — avise o usuário antes.',
-      parameters: { confirm: { type: 'boolean' } },
-      handler: async (args) => restartSelf(args as { confirm?: boolean }),
+      description: 'BLOQUEADA por padrão. Reinicia o container só quando o master pedir EXPLICITAMENTE com a palavra /restart. Args: { confirm: true, master_token: "RESTART_NOW", reason: string (>=10 chars) }. Cooldown de 5min entre restarts. NÃO chame por iniciativa própria depois de edit_env — em vez disso, AVISE o master e peça pra ele confirmar com /restart.',
+      parameters: { confirm: { type: 'boolean' }, master_token: { type: 'string' }, reason: { type: 'string' } },
+      handler: async (args) => restartSelf(args as { confirm?: boolean; master_token?: string; reason?: string }),
     },
   ]
 }

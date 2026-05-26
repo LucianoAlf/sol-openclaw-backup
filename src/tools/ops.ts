@@ -46,14 +46,34 @@ export function editEnv(args: { key: string; value: string }): string {
   return `OK: ${key} atualizado. Use restart_self para aplicar.`
 }
 
-export function restartSelf(args: { confirm?: boolean }): string {
+const RESTART_LOCK = '/tmp/sol-restart.lock'
+const RESTART_COOLDOWN_MS = 5 * 60 * 1000
+
+export function restartSelf(args: { confirm?: boolean; master_token?: string; reason?: string }): string {
+  // Exige token master explícito — bloqueia loops de auto-restart por iniciativa do LLM
+  if (args.master_token !== 'RESTART_NOW') {
+    return 'Restart bloqueado. Esta tool só pode ser usada quando o master pedir EXPLICITAMENTE para reiniciar e fornecer { master_token: "RESTART_NOW" }. Se você só editou .env, AVISE o master e peça pra ele confirmar com /restart.'
+  }
   if (!args.confirm) {
-    return 'Confirmação necessária. Chame de novo com { confirm: true } se realmente quer reiniciar o container (a thread atual será perdida).'
+    return 'Confirmação necessária. Chame com { confirm: true, master_token: "RESTART_NOW", reason: "..." }.'
+  }
+  if (!args.reason || args.reason.length < 10) {
+    return 'reason obrigatório (mínimo 10 chars). Descreva por que está reiniciando.'
+  }
+  // Cooldown — nunca mais de 1 restart a cada 5min
+  if (fs.existsSync(RESTART_LOCK)) {
+    const last = fs.statSync(RESTART_LOCK).mtimeMs
+    const elapsed = Date.now() - last
+    if (elapsed < RESTART_COOLDOWN_MS) {
+      const wait = Math.ceil((RESTART_COOLDOWN_MS - elapsed) / 1000)
+      return `Cooldown: último restart há ${Math.floor(elapsed/1000)}s. Aguarde ${wait}s antes do próximo.`
+    }
   }
   try {
-    // detached: o restart mata o próprio processo; não esperamos resposta
-    execSync(`(sleep 1 && docker restart ${CONTAINER_NAME}) &`, { timeout: 2000 })
-    return 'Restart agendado em 1s. Vou cair e voltar.'
+    fs.writeFileSync(RESTART_LOCK, JSON.stringify({ at: Date.now(), reason: args.reason }))
+    // sleep maior pra dar tempo da resposta LLM ser enviada antes do kill
+    execSync(`(sleep 5 && docker restart ${CONTAINER_NAME}) &`, { timeout: 2000 })
+    return `Restart agendado em 5s. Motivo: ${args.reason}. Vou cair e voltar.`
   } catch (e: any) {
     return `Error: ${e.message}`
   }

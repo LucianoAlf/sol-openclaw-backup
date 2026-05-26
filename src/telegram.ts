@@ -106,6 +106,19 @@ function recordTelegramChat(workspacePath: string, message: TelegramMessage): vo
   fs.writeFileSync(p, JSON.stringify(chats, null, 2), 'utf-8')
 }
 
+function recordHeartbeatTarget(workspacePath: string, message: TelegramMessage): void {
+  if (!message.message_thread_id) return
+
+  const p = path.join(workspacePath, 'memory', 'heartbeat-telegram-target.json')
+  fs.mkdirSync(path.dirname(p), { recursive: true })
+  fs.writeFileSync(p, JSON.stringify({
+    chat_id: String(message.chat.id),
+    chat_type: message.chat.type,
+    message_thread_id: message.message_thread_id,
+    updated_at: new Date().toISOString(),
+  }, null, 2), 'utf-8')
+}
+
 function chunkTelegramText(text: string): string[] {
   const chunks: string[] = []
   for (let i = 0; i < text.length; i += 3900) {
@@ -170,6 +183,7 @@ export async function startTelegramBot(cfg: Config, session: SessionManager): Pr
     const chatId = String(message.chat.id)
     const fromId = message.from?.id ? String(message.from.id) : undefined
     const masterContact = telegramMasterContact(cfg, fromId ?? chatId) ?? telegramMasterContact(cfg, chatId)
+    if (masterContact) recordHeartbeatTarget(cfg.workspacePath, message)
     const senderId = masterContact ? `tg:${cfg.telegramMasterChatId}` : `tg:${chatId}`
     const text = message.text?.trim() ?? message.caption?.trim()
     const threadId = message.message_thread_id

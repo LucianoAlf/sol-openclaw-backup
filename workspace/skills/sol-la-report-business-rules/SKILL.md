@@ -85,11 +85,14 @@ Leia conforme a tarefa:
 - `references/regras-canonicas.md` — regras validadas e status atual.
 - `references/pendencias-bloqueadores.md` — pontos ainda não fechados.
 - `references/p8-p11-snapshot.md` — `dados_mensais`, congelamento, audit trail, SELECT-only.
+- `references/historico-cg-maio-2026.md` — fechamento validado de Campo Grande/Maio 2026; 470 pagantes é âncora histórica, não bug automático.
 - `references/checklist-sql-seguro.md` — checklist antes de qualquer SQL/migration.
 
 Para qualquer alteração que afete métrica, consulte primeiro `regras-canonicas.md`.
 
 Para `dados_mensais`, snapshot, cron, fechamento mensal ou histórico, consulte primeiro `p8-p11-snapshot.md`.
+
+Para qualquer pergunta sobre Campo Grande/Maio 2026, leia também `historico-cg-maio-2026.md` antes de concluir divergência.
 
 ---
 
@@ -114,6 +117,7 @@ Resumo rápido:
 Ainda não fechar como canônico final sem nova validação:
 
 - P8/P11 `dados_mensais`: SELECT-only liberado; migration v3 aprovada só como desenho técnico; produção travada.
+- Campo Grande/Maio 2026: fechamento histórico validado em 470 pagantes; não substituir por cálculo vivo atual sem auditoria forense e aprovação explícita.
 - Taxa de renovação: confirmar se `aviso_previo` entra no denominador.
 - Taxa de conversão geral do funil: `novas / total_leads` vs `novas / leads_com_exp`.
 

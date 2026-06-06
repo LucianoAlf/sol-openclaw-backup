@@ -102,7 +102,7 @@ Resumo rápido:
 
 - Churn: `evasoes / alunos_pagantes * 100`.
 - Inadimplência: `% cabeças = qtd_inadimplentes / alunos_pagantes * 100`.
-- Ticket médio: por pessoa, `MRR / COUNT(DISTINCT pagantes)`.
+- Ticket médio: soma/faturamento de todos os cursos dos alunos pagantes ÷ alunos pagantes por pessoa; segundo curso entra no numerador, mas não duplica o denominador; bolsista integral/parcial fora.
 - Canto Coral: usar `cursos.is_coral`; filtro por nome é legado.
 - Bolsista parcial: não conta como pagante e não entra no ticket médio.
 - Passaporte: não entra no MRR; é receita à parte.

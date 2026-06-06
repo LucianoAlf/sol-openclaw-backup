@@ -39,25 +39,30 @@ Classificação:
 
 ### Pagantes
 
-Excluem:
+✅ Regra validada pelo Alf em 2026-06-06:
 
-- bolsista integral;
-- bolsista parcial;
-- não pagante;
-- segundo curso no card de pagantes, para não duplicar pessoa;
-- banda/projeto;
-- coral;
-- valor de parcela zero.
-
-✅ Bolsista parcial não conta como pagante e não entra no ticket médio.
+- `alunos_pagantes` é por pessoa/aluno, não por matrícula/curso;
+- bolsista integral não conta como pagante;
+- bolsista parcial não conta como pagante;
+- segundo curso não duplica a pessoa no denominador;
+- aluno com múltiplos cursos continua contando como **1 aluno pagante**, se for pagante.
 
 ### Ticket médio
 
-✅ Ticket médio canônico: por pessoa.
+✅ Regra canônica validada pelo Alf em 2026-06-06:
 
-```sql
-MRR / COUNT(DISTINCT pagantes)
+```text
+Ticket médio = faturamento total dos cursos dos alunos pagantes / alunos pagantes
 ```
+
+Interpretação operacional:
+
+- Numerador: somar o valor/faturamento de **todos os cursos** do aluno pagante, incluindo segundo curso.
+- Denominador: contar cada aluno/pessoa pagante **uma única vez**.
+- Excluir bolsistas integrais e bolsistas parciais do numerador e do denominador.
+- Não calcular ticket médio como `AVG(valor_parcela)` por matrícula/linha, porque isso duplica aluno com múltiplos cursos e distorce o KPI.
+
+Exemplo: se um aluno pagante tem 4 cursos de R$380 + R$355 + R$367 + R$127, o numerador recebe R$1.229 e o denominador recebe 1 pessoa.
 
 ### MRR
 

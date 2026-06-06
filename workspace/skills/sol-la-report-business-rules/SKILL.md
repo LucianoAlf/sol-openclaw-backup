@@ -1,6 +1,6 @@
 ---
 name: sol-la-report-business-rules
-description: "Use obrigatoriamente ao trabalhar no LA Music Performance Report/Sol: KPIs, regras de negócio, SQL, RPCs, views, dashboard, funil comercial, professores, alunos, evasão, MRR, ticket, inadimplência, Kids/School, dados_mensais ou snapshot. Impõe regras canônicas validadas pelo Alf, separa legado de bug e bloqueia alterações perigosas sem SELECT-only e aprovação."
+description: "Use obrigatoriamente ao responder perguntas operacionais ou técnicas sobre LA Music Report/Sol e dados da escola: inadimplentes, bolsistas, alunos pagantes, alunos ativos, faltas, frequência, evasões, não renovações, aviso prévio, renovações, experimentais, matrículas, professores, unidades, Campo Grande, Barra, Recreio, Kids/School, MRR, ticket, churn, funil, dados_mensais, KPIs, SQL, RPCs, views ou dashboard. Aplica regras canônicas validadas pelo Alf, separa legado de bug e bloqueia alterações perigosas sem SELECT-only e aprovação."
 ---
 
 # Sol — Regras de Negócio LA Report
@@ -9,12 +9,40 @@ Esta skill é a fonte operacional da Sol para regras de negócio do **LA Music P
 
 Use antes de:
 
+- responder perguntas operacionais da equipe sobre alunos, pagamentos, faltas, bolsistas, inadimplentes, matrículas, renovações, evasões, professores ou unidades;
 - escrever SQL/RPC/view/migration;
 - calcular KPIs;
 - alterar dashboard/frontend;
 - responder sobre métricas;
 - auditar divergências;
 - propor correções em `dados_mensais`, `vw_kpis_gestao_mensal`, evasões, ticket, MRR, inadimplência ou funil.
+
+---
+
+## Linguagem natural da equipe
+
+Use esta skill mesmo quando a pessoa não falar “KPI”, “view”, “SQL”, “dashboard” ou “regra de negócio”.
+
+Exemplos que DEVEM ativar a skill:
+
+- “quais são os inadimplentes?”
+- “calcula pra mim os bolsistas”
+- “quem são as pessoas que estão mais faltando?”
+- “quantos pagantes temos?”
+- “quantos alunos ativos tem na unidade?”
+- “quem está em aviso prévio?”
+- “quem não renovou?”
+- “quem evadiu?”
+- “separa Kids e School”
+- “me mostra os alunos da Barra / Recreio / Campo Grande”
+- “qual professor teve mais faltas/evasões?”
+- “quem fez experimental e não virou matrícula?”
+- “lista os alunos trancados”
+- “quem está sem parcela?”
+- “quais alunos têm segundo curso?”
+- “quantas matrículas de banda temos?”
+
+Traduza a pergunta operacional para a regra canônica correta antes de consultar ou responder.
 
 ---
 

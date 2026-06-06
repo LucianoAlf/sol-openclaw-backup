@@ -15,7 +15,7 @@ Para carregar uma skill: `read_file skills/<categoria>/<nome>/SKILL.md`
 
 | Skill | Status | Caminho | Função |
 |---|---|---|---|
-| Sol LA Report Business Rules | ATIVO | `skills/sol-la-report-business-rules/SKILL.md` | Regras canônicas do LA Music Performance Report/Sol: KPIs, SQL seguro, P8/P11 snapshot, pendências e bloqueios de produção |
+| Sol LA Report Business Rules | ATIVO | `skills/sol-la-report-business-rules/SKILL.md` | Regras canônicas do LA Music Performance Report/Sol para perguntas operacionais da equipe (inadimplentes, bolsistas, faltas, pagantes, alunos, professores, unidades) e tarefas técnicas (KPIs, SQL seguro, P8/P11 snapshot, pendências e bloqueios de produção) |
 
 ---
 

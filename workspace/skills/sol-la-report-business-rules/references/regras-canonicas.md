@@ -74,9 +74,13 @@ Exemplo: se um aluno pagante tem 4 cursos de R$380 + R$355 + R$367 + R$127, o nu
 
 ### MRR
 
-✅ Passaporte não entra no MRR.  
-MRR = recorrência de parcelas/mensalidades.  
-Passaporte = receita à parte.
+✅ Regra canônica validada pelo Alf:
+
+- MRR = soma das parcelas/mensalidades recorrentes pagantes.
+- Segundo curso pagante entra no MRR/faturamento, porque é recorrência real paga pelo aluno.
+- Segundo curso **não duplica** a pessoa no denominador de `alunos_pagantes` nem de ticket médio.
+- Bolsistas integrais/parciais não entram no MRR/ticket, salvo regra futura explícita em contrário.
+- Passaporte não entra no MRR; é receita à parte.
 
 ---
 

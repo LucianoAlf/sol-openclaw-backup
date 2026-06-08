@@ -19,19 +19,27 @@ Classificação:
 - 📋 Identidade operacional: `LOWER(TRIM(nome)) + unidade_id`.
 - 📋 Nome sozinho pode colidir; dois nomes iguais na mesma unidade exigem checagem humana.
 - 📋 Segundo curso = matrícula adicional de outro curso.
-- 📋 Mesmo `curso_id` duplicado para a mesma pessoa = duplicata, não segundo curso.
+- 📋 Mesmo `curso_id` duplicado para a mesma pessoa geralmente é duplicata, não segundo curso.
+- ✅ Exceção validada pelo Alf em 2026-06-07: quando o aluno faz dois horários/tempos reais do mesmo curso, especialmente aula individual seguida, e paga separadamente por cada tempo, os dois vínculos são legítimos. Ex.: Vitória da Silva Nobre faz dois tempos individuais seguidos e paga R$650 por cada; não arquivar como duplicata automática.
 
 ### Total alunos ativos
 
-- 📋 Base = pessoas, não matrículas.
-- 📋 Inclui `ativo` + `trancado`.
-- 📋 Exclui `is_segundo_curso = true`.
-- 🚫 `COUNT(*)` para ativos/pagantes é possível bug.
+✅ Regra validada pelo Alf em 2026-06-08:
+
+- Base = **pessoas/alunos únicos**, não matrículas/vínculos.
+- Inclui alunos com `status IN ('ativo', 'trancado')`.
+- Inclui pagantes, bolsistas integrais, bolsistas parciais e alunos que estão só em banda/projeto.
+- Segundo curso e múltiplas matrículas do mesmo aluno **não duplicam** aluno ativo.
+- Kids/School deve usar a mesma base de alunos ativos; `Kids + School + Sem classificação` deve fechar com `alunos_ativos`.
+- 🚫 `COUNT(*)` sobre linhas de `alunos` para ativos/pagantes é bug quando duplica pessoa por matrícula, segundo curso ou vínculo adicional.
 
 ### Matrículas ativas
 
-- 📋 Base = registros.
-- 📋 Inclui primeiro curso, segundo curso, banda e coral.
+✅ Regra validada pelo Alf em 2026-06-08:
+
+- Base = **registros/vínculos/matrículas**, não pessoas únicas.
+- Inclui curso regular, segundo curso, banda/projeto, coral, bolsistas integrais/parciais e pagantes.
+- Pode ser maior que `alunos_ativos`, porque um aluno pode ter mais de uma matrícula/vínculo.
 
 ---
 
@@ -76,9 +84,15 @@ Passaporte = receita à parte.
 
 ### Evasão
 
-- 📋 Evasão = `evasao` + `nao_renovacao` em `movimentacoes_admin`.
-- 📋 Aviso prévio não é evasão.
+- 📋 Evasão = `evasao` + `nao_renovacao` em `movimentacoes_admin`, desde que represente perda real do aluno.
+- ✅ Transferência interna entre unidades **não é evasão/churn global da LA Music**.
+- ✅ Quando o aluno sai de uma unidade e continua ativo em outra unidade, classificar como transferência interna, não como perda de aluno.
+- 📋 Para análise por unidade, transferência pode aparecer como saída operacional da unidade origem e entrada na unidade destino, mas deve ficar separada de evasão/não renovação.
+- 📋 Para análise global LA Music, transferência interna não entra no numerador de churn.
+- ✅ Aviso prévio não é evasão na competência em que foi avisado.
+- ✅ Regra operacional validada pelo Alf em 2026-06-07: quando o aviso prévio é dado em maio, o aluno ainda cumpre/assiste maio, junho e julho; se não houver reversão, a saída real é julho. Portanto, aviso prévio de maio não entra como evasão/churn de maio. Para KPI, usar a competência da saída real/encerramento, não a competência do aviso.
 - 📋 Trancamento não é evasão.
+- 🚫 Movimentação por nome, sem vínculo confiável por `aluno_id`, `matricula_id` ou `emusys_matricula_id`, não autoriza classificar evasão.
 - 🚫 Não usar `evasoes_v2` como fonte viva.
 
 ### Churn
@@ -123,6 +137,29 @@ Não alterar sem validação do Alf.
 ✅ Regra validada: criar/usar `cursos.is_coral`.
 
 🚫 Filtro por nome (`ILIKE '%canto coral%'`) é legado frágil e deve ser substituído.
+
+---
+
+## Fideliza+
+
+✅ Regra validada pelo Alf em 2026-06-07:
+
+O programa Fideliza+ é **trimestral**, não mensal.
+
+Recortes oficiais:
+
+- Q1 = Janeiro, Fevereiro, Março.
+- Q2 = Abril, Maio, Junho.
+- Q3 = Julho, Agosto, Setembro.
+- Q4 = Outubro, Novembro, Dezembro.
+
+Implicações:
+
+- O painel deve deixar claro qual trimestre está sendo calculado.
+- Não deve parecer que os números do Fideliza+ são KPIs mensais do mês selecionado na página.
+- Se a página estiver filtrada em `Mai/2026`, o Fideliza+ de Q2 deve se apresentar como `Q2 — Abr/Mai/Jun`, não como Maio isolado.
+- Churn, inadimplência, renovação, reajuste e demais métricas do Fideliza+ devem usar o recorte trimestral correspondente.
+- Transferência interna entre unidades não conta como evasão/churn global também no Fideliza+.
 
 ---
 

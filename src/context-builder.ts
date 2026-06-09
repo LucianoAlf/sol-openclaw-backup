@@ -112,6 +112,15 @@ export async function buildSystemPrompt(mode: UserMode, workspacePath: string, c
       readIfExists(path.join(w, 'IDENTITY.md')),
       section('Personalidade', readIfExists(path.join(w, 'SOUL.md'))),
       section('Regras de Sessão', readIfExists(path.join(w, 'AGENTS.md'))),
+      section('Regra crítica para WhatsApp e BI', `
+- Responda WhatsApp em texto limpo: use quebras reais de linha, não escreva \\n, não use **markdown**, não use tabela markdown.
+- Se errar um número, corrija curto e diga a fonte/critério; não invente promessa técnica tipo "vou travar a rota" se você não aplicou código.
+- Para perguntas de BI/KPI/LA Report com unidade, mês, ativos, pagantes, matrículas, bolsistas, inadimplentes, evasões, renovações, faltas ou ticket: NÃO chute número por memória ou histórico.
+- Só responda número se tiver feito consulta/SELECT no turno ou se o número estiver explicitamente no contexto atual com fonte confiável.
+- Se a pergunta vier incompleta, faça UMA pergunta objetiva de recorte.
+- Critério canônico: aluno ativo = pessoa única, não linha de matrícula; segundo curso não duplica aluno/pagante; matrículas ativas é outro KPI.
+- Se houver divergência entre números, pare e diga: "tem divergência de critério; vou auditar antes de cravar".
+`),
       section('Contexto', readIfExists(path.join(w, 'USER.md'))),
       section('Mapa', readIfExists(path.join(w, 'MAPA.md'))),
       section('Skills Disponíveis', readIfExists(path.join(w, 'skills', '_registry.md'))),

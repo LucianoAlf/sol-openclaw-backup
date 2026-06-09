@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { sanitizeWhatsappText } from './utils/whatsapp-format.js'
 
 export function createWhatsappTools(uazapiUrl: string, uazapiToken: string, instance: string) {
   const headers = { token: uazapiToken }
@@ -17,7 +18,9 @@ export function createWhatsappTools(uazapiUrl: string, uazapiToken: string, inst
 
   async function sendWhatsapp(args: { phone: string; message: string }): Promise<string> {
     try {
-      const res = await axios.post(`${uazapiUrl}/send/text`, { number: args.phone, text: args.message }, { headers })
+      const text = sanitizeWhatsappText(args.message)
+      if (!text) return 'Error: mensagem vazia após sanitização'
+      const res = await axios.post(`${uazapiUrl}/send/text`, { number: args.phone, text }, { headers })
       console.log('[whatsapp] send/text response:', JSON.stringify(res.data).slice(0, 200))
       return `ok: mensagem enviada para ${args.phone}`
     } catch (e: any) {

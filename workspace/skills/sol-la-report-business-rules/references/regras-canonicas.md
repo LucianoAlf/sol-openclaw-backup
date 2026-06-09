@@ -116,6 +116,20 @@ evasoes / alunos_pagantes * 100
 
 Não alterar sem validação do Alf.
 
+### Renovação antecipada
+
+✅ Regra operacional validada pelo Alf em 2026-06-09:
+
+- Renovação antecipada é uma renovação lançada no Emusys antes da competência efetiva do novo ciclo.
+- Exemplo real: webhook/lançamento em junho, mas `matricula.data_primeira_aula` do novo ciclo em julho.
+- Não apagar renovação antecipada para “limpar” relatório; o sistema deve preservar o evento e classificar corretamente.
+- Para KPI/relatório mensal, renovação antecipada **não deve contar como renovação realizada no mês do lançamento**.
+- Deve aparecer em ambiente/lista própria de **Renovações Antecipadas**.
+- Deve contar como renovação efetiva na competência da primeira aula/novo ciclo, se continuar válida.
+- Campo canônico preferencial no payload Emusys: `payload_bruto.matricula.data_primeira_aula`; fallback: maior `disciplinas[].data_hora_primeira_aula`.
+- O Report deve separar: data de lançamento/webhook, data efetiva da renovação, competência efetiva e status operacional (`antecipada`, `efetivada`, `cancelada`, etc.).
+- Código atual que grava `renovacoes.data_renovacao` ou `movimentacoes_admin.data` como “hoje” para renovação antecipada é bug operacional, pois suja o mês do lançamento.
+
 ---
 
 ## Kids / School

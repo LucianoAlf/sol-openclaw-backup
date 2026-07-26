@@ -154,12 +154,6 @@ Decisão do Alf em 2026-07-26: **não usar UAZAPI para a Sol**.
 - Nenhum canal de outro agente usado como atalho.
 - Nenhum UAZAPI na rota da Sol.
 
-### Critério de pronto
-
-- Número correto configurado/documentado.
-- Nenhum canal de outro agente usado como atalho.
-- Testes feitos sem envio real indevido.
-
 ---
 
 ## Fase 5 — Bridge em produção de verdade

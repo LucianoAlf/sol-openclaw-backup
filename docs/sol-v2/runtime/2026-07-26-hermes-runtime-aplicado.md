@@ -182,3 +182,27 @@ Evidências de segurança:
 Conclusão: a conta WhatsApp está pareada, mas o canal WhatsApp da Sol ainda NÃO está habilitado no gateway e NÃO há auto-reply ativo.
 
 Próximo passo seguro: aplicar política WhatsApp listen-only/allowlist e validar recepção em ambiente controlado antes de qualquer envio real ou auto-reply em grupo.
+
+## Atualização — WhatsApp nativo conectado e habilitado para Alf
+
+Data: 2026-07-26
+
+Depois de falhas intermitentes de pareamento com Baileys (`WHATSAPP_CLOSED 515`), foi usado um pareador temporário com reconexão automática. O pareamento confirmou `WHATSAPP_CONNECTED`.
+
+Configuração ativa após validação:
+
+- `WHATSAPP_ENABLED=true`
+- `WHATSAPP_MODE=bot`
+- `WHATSAPP_ALLOWED_USERS=5521981278047`
+- `WHATSAPP_GROUP_POLICY=disabled`
+- `whatsapp: {}` permanece no `config.yaml`.
+
+Evidência operacional:
+
+- `hermes-gateway-sol.service`: active/running, `NRestarts=0`.
+- Bridge WhatsApp nativo da Sol: `127.0.0.1:3000`.
+- Health local: `status=connected`, `queueLength=0`.
+
+Escopo liberado: conversa privada do Alf com a Sol via WhatsApp.
+
+Escopo ainda bloqueado: grupos, envio automático em grupo, envio para cliente/aluno e cron de relatórios em produção.

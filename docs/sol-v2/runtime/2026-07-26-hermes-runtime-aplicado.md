@@ -161,3 +161,24 @@ Fase 4B — Coleta de grupos:
 - Identificar JIDs dos grupos aprovados.
 - Manter `group_policy=disabled` até existir lista explícita ou mecanismo de ingestão listen-only.
 - Para relatórios diários, preferir envio controlado por cron para grupo aprovado, não auto-reply conversacional.
+
+## Atualização — WhatsApp nativo pareado sem habilitar auto-reply
+
+Data: 2026-07-26
+
+O WhatsApp nativo Hermes da Sol foi pareado com sucesso para o número novo `552121700723` usando o bridge Baileys em modo `--pair-only`, sem executar o wizard completo `hermes whatsapp`.
+
+Evidências de segurança:
+
+- Sessão criada em `/home/sol/.hermes/profiles/sol/whatsapp/session/creds.json`.
+- `WHATSAPP_ENABLED` permanece unset em `/home/sol/.hermes/profiles/sol/.env`.
+- Config ativo permanece com `whatsapp: {}`.
+- `WHATSAPP_MODE=bot`.
+- `WHATSAPP_ALLOWED_USERS=5521981278047`.
+- `WHATSAPP_GROUP_POLICY=disabled`.
+- `hermes-gateway-sol.service` permaneceu ativo/running com `NRestarts=0`.
+- QR temporário e script temporário de pareamento foram removidos após o pareamento.
+
+Conclusão: a conta WhatsApp está pareada, mas o canal WhatsApp da Sol ainda NÃO está habilitado no gateway e NÃO há auto-reply ativo.
+
+Próximo passo seguro: aplicar política WhatsApp listen-only/allowlist e validar recepção em ambiente controlado antes de qualquer envio real ou auto-reply em grupo.

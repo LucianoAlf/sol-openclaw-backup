@@ -153,3 +153,29 @@ Plano ajustado:
 - seguir a reforma sem rotação;
 - tratar rotação como pendência recomendada, não bloqueante;
 - continuar com mitigação segura: repo sanitizado, `.gitignore`, documentação, remoção de segredo de argv quando possível e sem expor valores.
+
+---
+
+## Execução local concluída — 2026-07-26 13:00 UTC
+
+Ações executadas localmente:
+
+- Backup bruto restrito criado fora do repo em `/root/.openclaw/private/sol-repo-raw-backups/`.
+- Histórico local reescrito com `git filter-repo`, removendo `backups/`.
+- `.gitignore` reforçado.
+- Docs Sol v2 e auditorias commitados localmente.
+- Scan final:
+  - archives no estado atual: OK;
+  - archives no histórico local: OK;
+  - paths `backups/` no histórico local: OK.
+
+Status Git pós-limpeza:
+
+- commit local: `a458c90 docs(sol-v2): add roadmap spec and security audit`.
+- working tree limpo.
+- remoto `origin/main` ainda contém histórico antigo.
+- divergência local/remoto detectada: repo local sanitizado diverge do remoto antigo.
+
+Próximo passo pendente:
+
+- Fazer `git push --force-with-lease origin main` **somente com aprovação explícita**, pois altera o histórico remoto usado por Alf/Hugo.

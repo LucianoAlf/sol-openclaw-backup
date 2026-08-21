@@ -89,7 +89,13 @@ function detectarContextoMultiAluno(texto) {
   const pluralidade = /\b(?:dois|2|ambos|mais de um|varios|varias)\s+alun(?:o|os|a|as)\b|\balunos\b|\bpassaportes\b/.test(t);
   const nomesEmConjunto = /\balunos?\b[\s:\-]+[^\n]{3,120}\s+\be\s+[^\n]{3,120}/.test(t)
     || /\b(?:joao|maria|pedro|ana)\b[^\n]{0,80}\s+\be\s+[^\n]{3,80}/.test(t);
-  return pluralidade && (nomesEmConjunto || /\b(?:dois|2|ambos|mais de um)\b/.test(t));
+  // A legenda operacional costuma vir no singular ("Passaporte de João e
+  // Pedro"), mas descreve duas pessoas. Esse é contexto forte de lote: a
+  // regra só roteia para revisão/intent multi e jamais escolhe uma delas.
+  // Mantemos a exigência de categoria financeira + preposição + dois nomes,
+  // para não confundir uma frase genérica contendo "e" com dois alunos.
+  const categoriaComDoisNomes = /\b(?:passaportes?|taxas?\s+de\s+matriculas?|matriculas?|parcelas?|mensalidades?|pagamentos?)\s+(?:de|do|da|dos|das)\s+[a-zà-ÿ]{2,}(?:\s+[a-zà-ÿ]{2,}){1,4}?\s+e\s+[a-zà-ÿ]{2,}(?:\s+[a-zà-ÿ]{2,}){1,4}?(?=\s*(?:[-–—]|r\$|$))/.test(t);
+  return categoriaComDoisNomes || (pluralidade && (nomesEmConjunto || /\b(?:dois|2|ambos|mais de um)\b/.test(t)));
 }
 
 function validarIntencaoMultiAluno(raw, valorComprovante, defaults = {}) {
@@ -102,16 +108,28 @@ function validarIntencaoMultiAluno(raw, valorComprovante, defaults = {}) {
   if (itensRaw.length < 2) return { ok: false, motivo: 'dois_itens_obrigatorios', total, forma, categoria: categoriaPadrao };
   const itens = itensRaw.map((item) => ({
     aluno_nome: tituloNome(item && (item.aluno_nome || item.aluno || '')),
-    valor: Number(item && item.valor || 0),
+    valor: item && item.valor != null && item.valor !== '' ? Number(item.valor) : null,
     competencia: item && item.competencia || competenciaPadrao || null,
     categoria: String(item && item.categoria || categoriaPadrao || '').toLowerCase() || null,
   }));
-  if (!total || !itens.every((i) => nomePlausivel(i.aluno_nome) && i.valor > 0 && i.categoria)) {
+  if (!total || !itens.every((i) => nomePlausivel(i.aluno_nome) && i.categoria)) {
     return { ok: false, motivo: 'itens_incompletos', total, forma, categoria: categoriaPadrao, itens };
+  }
+  // Sem alocação explícita, o banco é a única fonte que pode completar os
+  // valores: cada aluno precisa ter uma fatura canônica inequívoca e a soma
+  // precisa fechar com o comprovante. Não dividimos total no bridge.
+  const itensComValor = itens.filter((i) => i.valor != null && i.valor > 0);
+  if (itensComValor.length > 0 && itensComValor.length !== itens.length) {
+    return { ok: false, motivo: 'alocacao_parcial', total, forma, categoria: categoriaPadrao, itens };
+  }
+  if (itensComValor.length === 0) {
+    return { ok: true, tipo_recebimento: 'multi_aluno', valor_total: total, forma, categoria: categoriaPadrao, itens,
+      alocacao: 'derivar_da_fatura_canonica' };
   }
   const soma = Number(itens.reduce((s, i) => s + i.valor, 0).toFixed(2));
   if (Math.abs(soma - total) > 0.01) return { ok: false, motivo: 'soma_divergente', total, soma, forma, categoria: categoriaPadrao, itens };
-  return { ok: true, tipo_recebimento: 'multi_aluno', valor_total: total, forma, categoria: categoriaPadrao, itens, soma_itens: soma };
+  return { ok: true, tipo_recebimento: 'multi_aluno', valor_total: total, forma, categoria: categoriaPadrao, itens, soma_itens: soma,
+    alocacao: 'informada' };
 }
 
 const PRODUTO_LOJINHA_RE = /\b(lojinha|loja|cordas?|palhetas?|baquetas?|capotraste|afinador(?:es)?|cabos?|correia|encordoamento|livro|apostila|camiseta)\b/i;
@@ -270,7 +288,14 @@ function fmtBRL(v) {
 function tituloNome(raw) {
   const s = String(raw || '').replace(/\s+/g, ' ').trim();
   if (!s) return '';
-  return s.toLowerCase().replace(/\b\p{L}/gu, ch => ch.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g, m => m.toLowerCase());
+  // `\b` não reconhece letras acentuadas como parte de palavra em JS; por
+  // isso "João" virava "JoÃO". Capitalizamos por token, preservando os
+  // conectores do nome em minúsculas.
+  const conectores = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+  return s.toLocaleLowerCase('pt-BR').split(' ').map((parte) => {
+    if (!parte || conectores.has(parte)) return parte;
+    return parte.charAt(0).toLocaleUpperCase('pt-BR') + parte.slice(1);
+  }).join(' ');
 }
 
 function montarPreview({ unidadeNome, valor, forma, categoria, aluno, competencia, parcela, confiancaBaixa, responsavelFinanceiro, formaIncerta, cartaoModalidade, cartaoParcelas, multiplas, alunoViaPagador, pagadorNome, candidatosAluno, canonica, duplicata, quitacao, faturaIndisponivel, composto, bloqueiaLancamento, itemLojinha }) {
@@ -399,17 +424,30 @@ function montarPreview({ unidadeNome, valor, forma, categoria, aluno, competenci
 }
 
 function montarPreviewMultiAluno({ unidadeNome, valorTotal, forma, categoria, itens }) {
+  const lista = Array.isArray(itens) ? itens : [];
   const formaTxt = forma === 'cartao' ? 'cartão' : (forma || '❓ forma não identificada');
-  const linhas = (Array.isArray(itens) ? itens : []).map((item) => {
-    const fatura = item.descricao ? ` — ${item.descricao}` : '';
-    const comp = item.competencia ? ` · ${item.competencia}` : '';
-    return `• *${item.aluno_nome}*: ${fmtBRL(item.valor)}${comp}${fatura}`;
-  });
+  const linhas = lista.map((item) => `• ${item.aluno_nome} — ${fmtBRL(item.valor)}`);
+  const responsaveis = [...new Set(lista.map((i) => String(i.responsavel_financeiro || '').trim()).filter(Boolean))];
+  const linhaResponsavel = responsaveis.length === 1 ? `\n• Resp. financeiro: ${responsaveis[0]}`
+    : (responsaveis.length > 1 ? `\n• Resp. financeiros: ${responsaveis.join(' · ')}` : '');
+  const descricoes = [...new Set(lista.map((i) => String(i.descricao || '').trim()).filter(Boolean))];
+  const cursos = descricoes.map((d) => d.match(/^taxa(?:s)? de matr[íi]cula do curso de (.+)$/i)).filter(Boolean).map((m) => m[1]);
+  const faturaTexto = cursos.length === descricoes.length && cursos.length > 0
+    ? `Taxas de Matrícula dos cursos de ${cursos.join(' e ')}`
+    : (descricoes.length ? descricoes.join(' · ') : (categoria || 'Recebimento'));
+  const faturasPagas = lista.map((i) => i.fatura).filter((f) => f && f.status === 'paga');
+  const datasPagas = [...new Set(faturasPagas.map((f) => String(f.data_pagamento || '')).filter(Boolean))];
+  const formasPagas = [...new Set(faturasPagas.map((f) => String((f.forma_pagamento && f.forma_pagamento.nome) || '').trim()).filter(Boolean))];
+  const dataBR = datasPagas.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(datasPagas[0])
+    ? datasPagas[0].slice(8, 10) + '/' + datasPagas[0].slice(5, 7) : null;
+  const linhaStatus = faturasPagas.length === lista.length && dataBR
+    ? `• Já pago no Emusys em ${dataBR}${formasPagas.length === 1 ? ` no ${formasPagas[0]}` : ''} — falta lançar no caixa`
+    : '• Faturas validadas individualmente no Emusys';
   return [
-    `📄 *Comprovante multi-aluno — ${unidadeNome}*`,
-    `*RECEBIMENTO*\n\n• *${fmtBRL(valorTotal)}* · ${formaTxt}\n• Categoria: ${categoria || 'recebimento'}`,
-    `*ITENS DO LOTE*\n\n${linhas.join('\n')}`,
-    `✅ Soma dos itens confere com o comprovante: ${fmtBRL(valorTotal)}`,
+    `📄 *Comprovante recebido — ${unidadeNome}*`,
+    `*RECEBIMENTO*\n\n*${fmtBRL(valorTotal)}* · ${formaTxt}`,
+    `*ALUNOS*\n\n${linhas.join('\n')}${linhaResponsavel}`,
+    `*FATURA*\n\n• ${faturaTexto}\n• Valor: ${fmtBRL(valorTotal)} ✅ confere\n${linhaStatus}`,
     '👉 *Posso lançar o lote completo no caixa de hoje?* Responde *pode*',
   ].join('\n\n');
 }
@@ -1791,6 +1829,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       aluno_nome: item.aluno_nome, valor: Number(item.valor), competencia: item.competencia || null,
       categoria: item.categoria || intent.categoria, descricao: item.descricao || null,
       canonical_fatura_id: item.canonical_fatura_id || null, responsavel_financeiro: item.responsavel_financeiro || null,
+      fatura: item.fatura || null,
     }));
     const texto = montarPreviewMultiAluno({ unidadeNome: grupo.nome, valorTotal: intent.valor_total, forma: intent.forma, categoria: intent.categoria, itens });
     const previewId = await sendFn(event.chatId, texto);

@@ -24,7 +24,7 @@ function criar({ multi } = {}) {
     ocrFn: async () => 'Comprovante Pix realizado Valor R$ 720,00', visaoFn: async () => null,
     interpretarFn: async () => ({ categoria: 'passaporte', aluno: null, competencia: '08/2026', forma: 'pix' }),
     interpretarMultiFn: async () => multi,
-    resolverMultiFn: async (payload) => ({ ok: true, itens: payload.itens.map((i, n) => ({ ...i, aluno_nome: i.aluno_nome, competencia: i.competencia || '08/2026', descricao: `Passaporte ${n + 1}`, canonical_fatura_id: `F-${n + 1}`, responsavel_financeiro: `Responsável ${n + 1}` })) }),
+    resolverMultiFn: async (payload) => ({ ok: true, itens: payload.itens.map((i, n) => ({ ...i, aluno_nome: i.aluno_nome, valor: i.valor || 360, competencia: i.competencia || '08/2026', descricao: n === 0 ? 'Taxa de Matrícula do curso de Bateria' : 'Taxa de Matrícula do curso de Contrabaixo', canonical_fatura_id: `F-${n + 1}`, responsavel_financeiro: 'Andrea De Cássia Ramos', fatura: { status: 'paga', data_pagamento: '2026-08-21', forma_pagamento: { nome: 'Pix' } } })) }),
     canonicaFn: async () => null, casarFn: async () => null, faturasMesFn: async () => null, responsavelFn: async () => null,
     pagadorFn: async () => null, duplicataFn: async () => null, identidadeFn: async () => ({ identificado: true, nome: 'Operador Financeiro' }),
     log: () => {}, dryRun: false,
@@ -40,9 +40,12 @@ function criar({ multi } = {}) {
     { aluno_nome: 'João Victor Ramos Coelho', valor: null }, { aluno_nome: 'Pedro Victor Ramos Coelho', valor: null },
   ] } });
   const r1 = await semDivisao.h.handle(baseEvent());
-  assert.strictEqual(r1.acao, 'manual_review_multi_student');
-  assert.strictEqual(semDivisao.c.previews.length, 0);
-  assert.match(semDivisao.c.env[0], /não vou escolher/i);
+  assert.strictEqual(r1.acao, 'preview_multi_aluno_enviado');
+  assert.strictEqual(semDivisao.c.previews.length, 1);
+  assert.match(semDivisao.c.env[0], /João Victor Ramos Coelho — R\$ 360,00/);
+  assert.match(semDivisao.c.env[0], /Resp\. financeiro: Andrea De Cássia Ramos/);
+  assert.match(semDivisao.c.env[0], /Taxas de Matrícula dos cursos de Bateria e Contrabaixo/);
+  assert.match(semDivisao.c.env[0], /Já pago no Emusys em 21\/08 no Pix/);
 
   const completo = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', competencia: '08/2026', itens: [
     { aluno_nome: 'João Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },

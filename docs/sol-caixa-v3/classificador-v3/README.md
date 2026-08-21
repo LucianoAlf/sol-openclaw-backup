@@ -53,6 +53,12 @@ apenas registra intenção + resultado do parser legado em hashes locais. Não h
 mensagem WhatsApp, preview, approval, RPC financeira ou mudança de autoridade.
 O contrato e a ativação estão em `phase4-bridge-shadow-gate.md`.
 
+## Fase 4.1 — correlação de mídia
+
+`phase4-shadow-correlation-gate.md` documenta a correlação observacional entre
+legenda e mídia recebidas como mensagens distintas. Ela evita declarar uma
+divergência antes da consolidação do lote, sem adicionar qualquer write.
+
 ## Rollout
 
 1. Shadow: classificador novo observa, parser antigo continua autoridade.

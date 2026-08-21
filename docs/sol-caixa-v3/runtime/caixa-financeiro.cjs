@@ -1194,15 +1194,33 @@ function _alunoSuspeito(nome) {
 
 // Camada 1 de visao: OCR LOCAL (igual Maria) -- sem LLM, sem billing.
 // Imagem -> tesseract (por+eng); PDF -> pdftotext, fallback pdftoppm+tesseract.
-function ocrLocal(imagePath, { timeout = 45000 } = {}) {
+// `detailed` preserva o contrato legado (string por padrao), mas permite ao
+// handler distinguir timeout, erro do tesseract e texto realmente vazio.
+function ocrLocal(imagePath, { timeout = 45000, detailed = false } = {}) {
   return new Promise((resolve) => {
-    if (!imagePath) return resolve('');
-    try { if (!fs.existsSync(imagePath)) return resolve(''); } catch (e) { return resolve(''); }
+    const startedAt = Date.now();
+    let bytes = null;
+    const finish = (text, meta = {}) => {
+      const clean = String(text || '').trim();
+      const result = {
+        text: clean,
+        status: meta.status || (clean ? 'ok' : 'texto_vazio'),
+        duration_ms: Date.now() - startedAt,
+        file_bytes: bytes,
+        ...meta,
+      };
+      return resolve(detailed ? result : clean);
+    };
+    if (!imagePath) return finish('', { status: 'arquivo_ausente' });
+    try {
+      if (!fs.existsSync(imagePath)) return finish('', { status: 'arquivo_inexistente' });
+      bytes = fs.statSync(imagePath).size;
+    } catch (e) { return finish('', { status: 'arquivo_indisponivel', error_code: e && e.code || null }); }
     const isPdf = /\.pdf$/i.test(imagePath);
     if (isPdf) {
       execFile('/usr/bin/pdftotext', ['-layout', imagePath, '-'], { timeout, maxBuffer: 3 * 1024 * 1024 }, (err, stdout) => {
         const t = String(stdout || '').trim();
-        if (t.length >= 15) return resolve(t);
+        if (t.length >= 15) return finish(t, { status: 'ok', engine: 'pdftotext', exit_code: err && err.code || 0, signal: err && err.signal || null });
         try {
           const cp = require('child_process');
           const pre = imagePath + '.ocrpg';
@@ -1211,21 +1229,54 @@ function ocrLocal(imagePath, { timeout = 45000 } = {}) {
           if (!r.status && fs.existsSync(png)) {
             const rr = cp.spawnSync('/usr/bin/tesseract', [png, 'stdout', '-l', 'por+eng', '--psm', '6'], { timeout, encoding: 'utf8', maxBuffer: 3 * 1024 * 1024 });
             try { fs.unlinkSync(png); } catch (e) {}
-            return resolve(String(rr.stdout || '').trim());
+            return finish(String(rr.stdout || '').trim(), { status: rr.status === 0 ? 'ok' : 'tesseract_error', engine: 'tesseract', psm: 6, exit_code: rr.status, signal: rr.signal || null });
           }
         } catch (e) {}
-        return resolve(t);
+        return finish(t, { status: err && (err.killed || err.code === 'ETIMEDOUT') ? 'timeout' : 'texto_vazio', engine: 'pdftotext', exit_code: err && err.code || null, signal: err && err.signal || null });
       });
     } else {
-      // psm 6 (bloco) + psm 4 (colunas): cupom de cartao so sai legivel no 4 --
-              // no 6 o "5.700,00" vira "5 700 00" e o valor se perde.
-      execFile('/usr/bin/tesseract', [imagePath, 'stdout', '-l', 'por+eng', '--psm', '6'], { timeout, maxBuffer: 3 * 1024 * 1024 }, (err, s6) => {
-        execFile('/usr/bin/tesseract', [imagePath, 'stdout', '-l', 'por+eng', '--psm', '4'], { timeout, maxBuffer: 3 * 1024 * 1024 }, (err2, s4) => {
-          const a = String(s6 || '').trim();
-          const b = String(s4 || '').trim();
-          resolve(a && b ? (a + '\n--- psm4 ---\n' + b) : (a || b));
+      // PSM 6 (bloco) e 4 (colunas) em paralelo. Antes eram sequenciais e
+      // dois timeouts de 45s transformavam uma falha transitória em 90s.
+      const outcomes = [];
+      const children = [];
+      let done = false;
+      const stopOthers = () => children.forEach((child) => { try { if (child && !child.killed) child.kill('SIGTERM'); } catch (_) {} });
+      const isUsable = (text) => text.length >= 20 && (Boolean(extrairValorOcr(text)) || SINAL_COMPROVANTE.test(text));
+      const conclude = (text, meta) => {
+        if (done) return;
+        done = true;
+        stopOthers();
+        finish(text, meta);
+      };
+      const onResult = (psm, err, stdout) => {
+        if (done) return;
+        const text = String(stdout || '').trim();
+        const meta = {
+          psm,
+          engine: 'tesseract',
+          exit_code: err && err.code || 0,
+          signal: err && err.signal || null,
+          timed_out: Boolean(err && (err.killed || err.code === 'ETIMEDOUT')),
+        };
+        outcomes.push({ text, meta });
+        if (isUsable(text)) return conclude(text, { status: 'ok', ...meta, parallel: true });
+        if (outcomes.length < 2) return;
+        const texts = outcomes.map((x) => x.text).filter(Boolean);
+        const timeoutSeen = outcomes.some((x) => x.meta.timed_out);
+        const errorSeen = outcomes.some((x) => x.meta.exit_code && !x.meta.timed_out);
+        conclude(texts.join('\n--- psm4 ---\n'), {
+          status: texts.length ? 'ok_parcial' : (timeoutSeen ? 'timeout' : (errorSeen ? 'tesseract_error' : 'texto_vazio')),
+          engine: 'tesseract',
+          psm: outcomes.map((x) => x.meta.psm),
+          exit_code: outcomes.map((x) => x.meta.exit_code),
+          signal: outcomes.map((x) => x.meta.signal),
+          timed_out: timeoutSeen,
+          parallel: true,
         });
-      });
+      };
+      for (const psm of [6, 4]) {
+        children.push(execFile('/usr/bin/tesseract', [imagePath, 'stdout', '-l', 'por+eng', '--psm', String(psm)], { timeout, maxBuffer: 3 * 1024 * 1024 }, (err, stdout) => onResult(psm, err, stdout)));
+      }
     }
   });
 }
@@ -1870,16 +1921,53 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       const media = (event.mediaUrls || [])[0];
       // Camada 1: OCR LOCAL (igual Maria) -- roda sempre que ha midia (texto p/ valor E interpretacao)
       let ocrText = '';
+      let ocrMeta = { status: 'nao_executado', duration_ms: 0, file_bytes: null };
       if (media) {
-        try { log({ acao: 'ocr_attempt', chatId }); ocrText = await ocrFn(media); } catch (e) { ocrText = ''; }
-        log({ acao: 'ocr_result', ocr_text_len: (ocrText || '').length });
+        try {
+          log({ acao: 'ocr_attempt', chatId });
+          const rawOcr = await ocrFn(media, { detailed: true });
+          if (rawOcr && typeof rawOcr === 'object' && Object.prototype.hasOwnProperty.call(rawOcr, 'text')) {
+            ocrText = String(rawOcr.text || '');
+            ocrMeta = { ...ocrMeta, ...rawOcr };
+          } else {
+            ocrText = String(rawOcr || '');
+            ocrMeta = { ...ocrMeta, status: ocrText.trim() ? 'ok' : 'texto_vazio' };
+          }
+        } catch (e) {
+          ocrText = '';
+          ocrMeta = { ...ocrMeta, status: 'ocr_exception', error_code: e && e.code || null, error_message: e && e.message || null };
+        }
+        log({
+          acao: 'ocr_result', chatId, ocr_text_len: ocrText.length,
+          ocr_status: ocrMeta.status, ocr_duration_ms: ocrMeta.duration_ms || null,
+          ocr_file_bytes: ocrMeta.file_bytes || null, ocr_exit_code: ocrMeta.exit_code || null,
+          ocr_signal: ocrMeta.signal || null, ocr_timed_out: Boolean(ocrMeta.timed_out),
+        });
         if (!valor) { const vv = extrairValorOcr(ocrText); if (vv) valor = vv; }
         if (!forma) { const ff = extrairForma(ocrText, null); if (ff) forma = ff; }
         const cc = extrairCartao(ocrText);
         if (cc) { forma = 'cartao'; cartaoModalidade = cc.modalidade; cartaoParcelas = cc.parcelas; }
       }
+      // Camada 2: visao OAuth e' fallback do OCR — inclusive quando ele falha.
+      // O fluxo antigo recusava a midia antes de chegar aqui justamente no caso
+      // de texto vazio/timeout, que e' quando a visao e' mais necessaria.
+      let alunoVis = null;
+      let visao = null;
+      if (media && (!valor || ocrText.trim().length < 20)) {
+        try {
+          log({ acao: 'fallback_vision_attempt', chatId, motivo: ocrText.trim().length < 20 ? (ocrMeta.status || 'ocr_curto') : 'valor_ausente' });
+          visao = await visaoFn(media);
+          log({ acao: 'fallback_vision_result', ok: !!(visao && visao.valor), chatId });
+          if (visao) { if (!valor && visao.valor) valor = visao.valor; if (!forma && visao.forma) forma = visao.forma; if (visao.aluno) alunoVis = visao.aluno; }
+        } catch (e) {
+          log({ acao: 'fallback_vision_error', chatId, error_code: e && e.code || null, error_message: e && e.message || null });
+        }
+      }
       // PORTA 2: print de tela / orçamento NÃO viram recebimento.
-      const cls = classificarMidia(ocrText, event.body);
+      let cls = classificarMidia(ocrText, event.body);
+      // A visao so promove para comprovante quando trouxe dado financeiro;
+      // print/orcamento sem esse sinal continua bloqueado.
+      if (cls.tipo !== 'comprovante' && visao && (visao.valor || visao.aluno)) cls = { tipo: 'comprovante', motivo: 'vision_fallback' };
       if (cls.tipo !== 'comprovante') {
         log({ acao: 'midia_recusada', tipo: cls.tipo, motivo: cls.motivo, chatId });
         if (cls.tipo === 'despesa') {
@@ -1888,16 +1976,6 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           await sendFn(chatId, '👀 Recebi, mas não consegui ler. Se for comprovante, manda com a legenda (ex.: *comprovante pix R$ 300 - Fulano*).');
         }
         return { acao: 'midia_recusada', tipo: cls.tipo, motivo: cls.motivo };
-      }
-      // Camada 2: fallback visao (OAuth) so se OCR nao resolveu o valor
-      let alunoVis = null;
-      if (media && !valor) {
-        try {
-          log({ acao: 'fallback_vision_attempt', chatId });
-          const v = await visaoFn(media);
-          log({ acao: 'fallback_vision_result', ok: !!(v && v.valor) });
-          if (v) { if (!valor && v.valor) valor = v.valor; if (!forma && v.forma) forma = v.forma; if (v.aluno) alunoVis = v.aluno; }
-        } catch (e) { /* best-effort */ }
       }
       // Legenda EFETIVA: costura a legenda da propria midia com a mensagem IRMA (o nome do
       // aluno que veio em bolha separada ~0,1s). Igual a Maria: o texto adjacente NAO se perde.
@@ -2859,6 +2937,7 @@ module.exports = {
   periodoQuitacao, extrairPeriodoMeses,
   extrairCompetenciaTexto, compostoDeFaturas, buscarCompostoFaturasMes, descricaoDoComposto,
   extrairComprovanteVisao, interpretarComprovante, casarParcela,
+  ocrLocal,
   extrairCorrecaoForma, extrairLancamentoCitado, extrairComandoMovimento,
   categoriaEhSaida,
 };

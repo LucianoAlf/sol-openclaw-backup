@@ -1,0 +1,62 @@
+{
+  "gate": "sol_caixa_v3_failclosed_approval",
+  "date_utc": "2026-08-21",
+  "status": "passed_with_runtime_canary",
+  "scope": [
+    "sol_caixa_lancar_recebimento",
+    "sol_caixa_lancar_saida",
+    "sol_caixa_shadow_previews_v1",
+    "sol_caixa_shadow_approvals_v1"
+  ],
+  "implemented": [
+    "created sol_caixa_v3_approval_consumos_v1 with RLS enabled and direct access revoked",
+    "created sol_caixa_v3_validar_approval_v1 as the server-side approval guard",
+    "sol_caixa_lancar_recebimento now requires V3 preview + approved approval before write",
+    "sol_caixa_lancar_saida now requires V3 preview + approved approval before write",
+    "bridge payload now sends v3_preview_id, v3_preview_hash, v3_approval_id and v3_actor_id_hash",
+    "approval reuse is blocked by unique consumption on approval_id"
+  ],
+  "database_smoke_rollback": {
+    "without_approval": {
+      "ok": false,
+      "motivo": "v3_preview_id_obrigatorio"
+    },
+    "with_valid_preview_and_approval": {
+      "ok": true,
+      "rolled_back": true
+    },
+    "approval_reuse": {
+      "ok": false,
+      "motivo": "approval_v3_ja_consumido"
+    }
+  },
+  "runtime": {
+    "host": "lahq",
+    "file": "/home/sol/.hermes/profiles/sol/caixa-ingestao/caixa-financeiro.cjs",
+    "sha256": "ccabe40c6e90d8d6a542be2b231d8036ab06462643a2465e746c3b85485ef5ce",
+    "gateway": "hermes-gateway-sol.service",
+    "bridge_health": "connected",
+    "port": 3000
+  },
+  "tests": {
+    "node_check": "passed",
+    "v3-ledger-production.test.cjs": "3/3",
+    "v3-e2e-tres-grupos.test.cjs": "3/3",
+    "all_test_files_with_timeout": {
+      "failed": 0,
+      "timed_out_known_legacy": [
+        "caixa-financeiro.test.cjs"
+      ]
+    },
+    "caixa-financeiro.test.cjs": "assertions printed ok; process still times out by known legacy handle"
+  },
+  "strict": {
+    "env_previous": "SOL_CAIXA_V3_LEDGER_STRICT=0",
+    "strict_1_flipped": false,
+    "reason": "fail-closed is now enforced in the DB mutating RPCs; env strict can be flipped after observing one live case"
+  },
+  "notes": [
+    "The table names remain shadow_* by contract; the guard makes them mandatory for financial writes.",
+    "No financial write from the smoke persisted; the positive write test ran inside rollback."
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "sol_caixa_gate_movimento_edicao_estorno_v1",
+  "generated_at_utc": "2026-08-20T23:07:41.821678Z",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": true,
+  "financial_mutation": false,
+  "financial_mutation_note": "DDL/RPC deployment only; smoke calls executed inside rollback transaction and left no caixa/audit rows.",
+  "migration_names": [
+    "sol_caixa_movimento_edicao_estorno_v1",
+    "sol_caixa_movimento_edicao_estorno_v1_harden_grants_auth"
+  ],
+  "created_objects": {
+    "tables": [
+      "public.sol_caixa_operacoes_auditoria_v1"
+    ],
+    "functions": [
+      "public.sol_caixa_buscar_movimentos_v1(jsonb)",
+      "public.sol_caixa_corrigir_movimento_v1(jsonb)",
+      "public.sol_caixa_estornar_movimento_v1(jsonb)",
+      "public.sol_caixa_autorizar_payload_v1(uuid,jsonb,text)",
+      "public.sol_caixa_recalcular_cofre(uuid)"
+    ]
+  },
+  "grants": {
+    "sol_acesso_restrito": [
+      "EXECUTE sol_caixa_buscar_movimentos_v1(jsonb)",
+      "EXECUTE sol_caixa_corrigir_movimento_v1(jsonb)",
+      "EXECUTE sol_caixa_estornar_movimento_v1(jsonb)"
+    ],
+    "anon": [],
+    "authenticated": [],
+    "sol_caixa_readonly": []
+  },
+  "authorization_model": {
+    "group_policy": "Any member is authorized only when payload contains official group_jid/chat_id for the same unidade.",
+    "explicit_fallback": "sol_caixa_autorizados remains fallback/audit path by phone and operation.",
+    "no_raw_table_write_grant": true
+  },
+  "rpc_behavior": {
+    "buscar": "Lists up to 10 recent candidate movements for correction/estorno after authorization.",
+    "corrigir": "Updates controlled fields only: forma_pagamento, cartao_modalidade, cartao_parcelas, categoria, descricao, responsavel, valor. Requires open caixa, recent window, motivo and authorization. Audits before/after.",
+    "estornar": "Does not DELETE. Inserts inverse movement with categoria=estorno, blocks repeated estorno via audit, requires open caixa, recent window, motivo and authorization.",
+    "cofre_balance": "Recalculates caixas_diarios.saldo_final_calculado when the corrected/estornado movement is ambiente=cofre."
+  },
+  "smoke_tests": {
+    "connection_role": "sol_acesso_restrito/sol_acesso_restrito/sol_acesso_restrito",
+    "rollback_buscar": "ok true; returned candidate movements",
+    "rollback_corrigir": "ok true inside transaction; rolled back",
+    "rollback_estornar": "ok true inside transaction; created inverse movement inside transaction; rolled back",
+    "rollback_unauthorized_without_group": "blocked with grupo_oficial_obrigatorio_para_policy_any_member",
+    "post_rollback_original_row": "original movimento remained pix with original descricao",
+    "post_rollback_audit_rows": 0
+  },
+  "blocked_or_not_implemented": {
+    "hard_delete": "Intentionally not implemented. Excluir is estorno/audit, not DELETE.",
+    "closed_cashbox_edits": "Blocked by caixa_fechado.",
+    "old_movements": "Blocked by fora_da_janela_operacional."
+  }
+}

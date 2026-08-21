@@ -1,0 +1,55 @@
+{
+  "schema_version": "sol_caixa_gate_group_members_authorized_v1",
+  "generated_at_utc": "2026-08-20T22:49:17.874Z",
+  "business_decision": "Membros dos grupos financeiros oficiais podem operar o dominio Caixa por ferramentas/RPCs especificas.",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": true,
+  "financial_mutation": false,
+  "whatsapp_touch": false,
+  "restart_performed": false,
+  "applied": {
+    "sol_caixa_unidade_policy_autoriza_qualquer_membro": true,
+    "units": [
+      "Barra",
+      "Campo Grande",
+      "Recreio"
+    ],
+    "explicit_authorization_rows_preserved": 23,
+    "group_policy_function": "public.sol_caixa_grupo_operacao_ok(uuid,text,text)",
+    "actor_policy_function": "public.sol_caixa_ator_operacao_ok(uuid,text,text)",
+    "preflight_function": "public.sol_caixa_readonly_preflight_v3()",
+    "rpc_execute_granted_to_sol_acesso_restrito": [
+      "sol_caixa_lancar_recebimento",
+      "sol_caixa_lancar_saida",
+      "sol_caixa_corrigir_forma_recebimento",
+      "sol_caixa_abrir",
+      "sol_caixa_fechar",
+      "sol_caixa_buscar_lancamento_para_correcao",
+      "sol_caixa_ingestao_registrar",
+      "sol_caixa_* read/resolve helpers"
+    ]
+  },
+  "guardrails": {
+    "domain": "caixa",
+    "requires_official_financial_group_context": true,
+    "write_only_via_specific_rpc": true,
+    "no_payment_actions": true,
+    "no_non_caixa_tables": true,
+    "raw_table_write_access": false
+  },
+  "verification": {
+    "units_with_any_group_member_authorized": 3,
+    "financial_groups_active": 3,
+    "sol_caixa_readonly_direct_select_sensitive_tables": false,
+    "sol_caixa_readonly_mutation_execute": false,
+    "sample_group_authorization": "ok",
+    "rollback_smoke": {
+      "lancar_recebimento_exec_ok_result": "valor_invalido",
+      "corrigir_forma_exec_ok_result": "movimentacao_nao_encontrada",
+      "transaction_rolled_back": true
+    },
+    "sol_acesso_restrito_rpc_execute": true,
+    "sol_acesso_restrito_direct_table_write": false
+  }
+}

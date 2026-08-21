@@ -1,0 +1,56 @@
+{
+  "schema_version": "sol_caixa_gate_shadow_inline_continuous_worker_report_v1",
+  "generated_at_utc": "2026-08-20T22:09:31Z",
+  "mode": "shadow_inline_continuous_worker_private_ledger",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": "only_private_shadow_ledger_when_actionable_events_arrive",
+  "financial_mutation": false,
+  "whatsapp_outbound": false,
+  "service_role_used": false,
+  "restart_performed": false,
+  "installed_remote": {
+    "worker": "/home/sol/.openclaw/workspace/scripts/sol-caixa-v3-shadow-worker.js",
+    "supervisor": "/home/sol/.openclaw/workspace/scripts/start-sol-caixa-v3-shadow-worker.sh",
+    "process": "node sol-caixa-v3-shadow-worker.js",
+    "offset": "/home/sol/.openclaw/workspace/memory/sol-caixa-v3-shadow-worker.offset.json",
+    "log": "/home/sol/.openclaw/workspace/memory/sol-caixa-v3-shadow-worker.log"
+  },
+  "source_hashes": {
+    "scripts/sol-caixa-v3-shadow-worker.js": "e097e7f97d64851e41db941684734327af3cf4af3b6cf66b4c69e9c64f44468f",
+    "scripts/start-sol-caixa-v3-shadow-worker.sh": "7f4c55d285a507a31a7154391aa4a31194082e067409d2278f7b9537d6aaa8b9"
+  },
+  "invariant_checks": {
+    "worker_is_sidecar": true,
+    "bridge_not_patched_for_this_gate": true,
+    "whatsapp_bridge_not_restarted": true,
+    "sendFn_is_noop_capture": true,
+    "handler_dry_run_enabled": true,
+    "financial_mutation_functions_are_noop": true,
+    "rpc_target_private_shadow_ledger_only": "public.sol_caixa_shadow_registrar(jsonb)"
+  },
+  "smoke": {
+    "manual_once_tail_lines": 4,
+    "registered_private_shadow_rows_via_rpc_return": 2,
+    "errors": 0,
+    "note": "Counts are not selected directly by sol_acesso_restrito because private ledger RLS hides rows; RPC returned ok during smoke."
+  },
+  "continuous_status": {
+    "started_at_utc": "2026-08-20T22:08:45Z",
+    "observed_lines_after_start": 2,
+    "registered_after_start": 0,
+    "errors_after_start": 0,
+    "offset_caught_up": true
+  },
+  "blocked_until_next_gate": {
+    "approval_ledger_from_real_pode": true,
+    "public_preview": true,
+    "financial_write": true,
+    "lid_to_canonical_identity_full_resolution": true
+  },
+  "warnings": [
+    "Continuous worker started after previous pending preview, so next real approval must be tested with a fresh event sequence.",
+    "This does not publish previews to WhatsApp and does not call caixa_movimentacoes write RPCs.",
+    "This uses the current caixa-financeiro parser in dry-run as a sidecar until the V3 resolver is fully swapped into the live path."
+  ]
+}

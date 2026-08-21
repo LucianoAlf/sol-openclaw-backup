@@ -1,0 +1,1578 @@
+{
+  "schema_version": "sol_caixa_gate_shadow_real_controlled_report_v1",
+  "generated_at_utc": "2026-08-20T21:49:38.192Z",
+  "mode": "shadow_real_controlled_readonly_retrospective",
+  "resolver_version": "sol-caixa-v3-shadow-real-controlled@2026-08-20.1",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": false,
+  "financial_mutation": false,
+  "whatsapp_touch": false,
+  "whatsapp_outbound": false,
+  "service_role_used": false,
+  "restart_performed": false,
+  "connection": {
+    "path": "ssh lahq -> Sol VPS logs + lareport-readonly secret -> psql pooler -> SET ROLE sol_caixa_readonly",
+    "current_user": "sol_caixa_readonly",
+    "current_role": "sol_caixa_readonly",
+    "session_user": "sol_acesso_restrito",
+    "role_setting": "sol_caixa_readonly",
+    "not_used": [
+      "service_role",
+      "WhatsApp outbound",
+      "mutation RPC",
+      "gateway restart"
+    ]
+  },
+  "real_sources": {
+    "sources_used": [
+      "Sol whatsapp-group-observe.jsonl tail",
+      "Sol caixa.log tail",
+      "public.sol_caixa_readonly_preflight_v1()",
+      "public.sol_caixa_readonly_preflight_v2()"
+    ],
+    "source_files_sha256": {
+      "observed_path_sha256": "949bdb8a102d27aa57d399efbc2f2389ba7518ec42b748926a19e3346bf9b49c",
+      "caixa_path_sha256": "90a670ee887e57f9c7c8771413a3301d0de45573f066c8949b98653fa8c46931"
+    },
+    "observed_events_read": 250,
+    "caixa_events_read": 500,
+    "financial_groups": {
+      "items": [
+        {
+          "ativo": true,
+          "nome_grupo": "FINANCEIRO BARRA",
+          "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+          "grupo_jid_md5": "ac8c6ccdfafde55449cd97e636bb000b"
+        },
+        {
+          "ativo": true,
+          "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+          "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+          "grupo_jid_md5": "496d792f013f8318c09188dfc749771b"
+        },
+        {
+          "ativo": true,
+          "nome_grupo": "FINANCEIRO LA RECREIO 🤑",
+          "unidade_id": "95553e96-971b-4590-a6eb-0201d013c14d",
+          "grupo_jid_md5": "8edb0026f8dc988efd552772b53c821f"
+        }
+      ],
+      "total": 3,
+      "active": 3
+    },
+    "least_privilege_v2": {
+      "direct_select_privileges": {
+        "emusys_faturas_select": false,
+        "caixa_movimentacoes_select": false,
+        "sol_caixa_autorizados_select": false,
+        "vw_whatsapp_caixas_departamento_select": false
+      },
+      "authorization_matrix": {
+        "by_unit": [
+          {
+            "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+            "unidade_nome": "Barra",
+            "authorized_active": 7,
+            "legacy_any_member_policy": false
+          },
+          {
+            "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+            "unidade_nome": "Campo Grande",
+            "authorized_active": 9,
+            "legacy_any_member_policy": false
+          },
+          {
+            "unidade_id": "95553e96-971b-4590-a6eb-0201d013c14d",
+            "unidade_nome": "Recreio",
+            "authorized_active": 7,
+            "legacy_any_member_policy": false
+          }
+        ],
+        "total_active": 23
+      },
+      "mutation_privileges": {
+        "can_execute_ingestao": false,
+        "can_execute_lancar_saida": false,
+        "can_execute_lancar_recebimento": false
+      }
+    }
+  },
+  "summary": {
+    "real_events_evaluated": 30,
+    "resolved_private_shadow_only": 15,
+    "blocked_or_manual_review": 15,
+    "legacy_preview_events_seen": 10,
+    "legacy_financial_writes_seen_near_events": 3,
+    "gate_status": "pass_with_warnings_shadow_real_readonly_retrospective"
+  },
+  "invariant_checks": {
+    "ran_under_sol_caixa_readonly": true,
+    "session_user_is_sol_acesso_restrito": true,
+    "no_service_role_used": true,
+    "no_mutation_rpc_called": true,
+    "no_database_writes": true,
+    "no_financial_mutations_by_runner": true,
+    "no_whatsapp_outbound_by_runner": true,
+    "no_restart": true,
+    "mutating_privileges_denied": true,
+    "direct_select_privileges_denied": true,
+    "explicit_authorization_matrix_present": true,
+    "legacy_any_member_policy_disabled": true
+  },
+  "side_effect_counters": {
+    "db_read_calls": 2,
+    "db_write_calls": 0,
+    "mutation_rpc_calls": 0,
+    "financial_mutations": 0,
+    "whatsapp_outbound_calls": 0,
+    "duplicate_outbound_calls": 0,
+    "restarts": 0,
+    "external_media_calls": 0
+  },
+  "warnings": [
+    "Retrospective shadow reads already-observed live events; it does not inject, replay or answer WhatsApp.",
+    "Some observed sender IDs are WhatsApp LID identifiers; canonical phone validation still depends on live identity evidence or a future LID-to-canonical mapping.",
+    "This gate does not authorize public preview or write."
+  ],
+  "blocked_until_next_gate": {
+    "preview_public": true,
+    "write": true,
+    "live_shadow_inline_processing": true,
+    "persistent_preview_ledger": true,
+    "persistent_approval_ledger": true
+  },
+  "results": [
+    {
+      "event_id_sha256": "c44064774384113c0ae764604f2cac8490ebf61ad3c7c8ba2a8158e02068291e",
+      "observed_at_utc": "2026-08-20T20:33:58.726Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "b0e57213d4cbf2a3d6a881cddcfeb08577388b4ea449a4bfe6dc5c8c8b94556f",
+      "sender_name_observed": "Ana Paula Mendonça",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "9f80bac4da36fb6f6ba5b7dcd2b32111082dfe2fda885e3b1ad0f8e73bc77117",
+      "body_excerpt_sanitized": "PG Parcela 08/2026 de Aila e Sofia Campos - LA CG - R$674,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 67400,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "interpretar_attempt",
+          "msg",
+          "identidade_autorizacao",
+          "lancado",
+          "result",
+          "interpretar_result",
+          "canonica_result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": true
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "aa281f155e305c80bf5a4dfad803db2b94e50c1d8892194e31f5c46aa45e0dd2",
+      "observed_at_utc": "2026-08-20T20:36:49.067Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "171ae4629ce288335c1458eaca9c5613a927bbb82949d3f248881b5af9d70c6e",
+      "body_excerpt_sanitized": "Sol, tem dois erros no caixa do Report. Vamos resolver o primeiro: O aluno: Ryan Fagundes Coimbra está com a forma de pagamento incorreta, ele pagou no Pix, alt",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "pix",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "init",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "b27b72ffd29afd4a0fb6979506340bc9b3143acc785c0d1916756060416a976a",
+      "observed_at_utc": "2026-08-20T20:36:57.661Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "74f28faf5ed0d5f8fd7a62100024d689553a661e50019bcb25871a5912e09197",
+      "body_excerpt_sanitized": "Sol, foi pix",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "pix",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "init",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "6a5a2adb6526d26930f76ee20afbd9f68b37e346226f3d6973082afaead6a8fe",
+      "observed_at_utc": "2026-08-20T20:37:07.086Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "e4c5c06c8e44ff01a9b1e56ba6cd6e234df66006eef3d9b9e1d14661bb080007",
+      "body_excerpt_sanitized": "Sol foi pix",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "pix",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "init",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result",
+          "msg",
+          "correcao_forma_sem_alvo",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "2b31cb28ee978f355b82d11307dd534d1cc8f48d78aecbea3ff275303077d672",
+      "observed_at_utc": "2026-08-20T20:38:23.130Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "a99d6cbf7dc64e218fef229c86b614d1ec587fbeccb07cb9b1da4c6d472ad364",
+      "body_excerpt_sanitized": "Paciência com a Sol 😞",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "1be51fb8875502857cbc2e55c230ebecf304ce811622f8aebaf38fc12849ffd7",
+      "observed_at_utc": "2026-08-20T20:38:35.329Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "5dd2c154e5ed2b797799cc654ddc4861736ab14689b9a57f259316e7aba1e562",
+      "body_excerpt_sanitized": "Solzinha tá brabaaa já",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "db2d1dcb8adb50ecf63920e116e836db82b02583edd5793fa66a45837607afb3",
+      "observed_at_utc": "2026-08-20T20:38:41.854Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "33c87995c1393764595452e9e709e64efa62ed186c8b5e2b5d9741a23cd899e0",
+      "body_excerpt_sanitized": "Né não? Sol",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "2bb3dc257355cdaeb3b8e5faea96cb135560ae4e495f95d37876696f4f19bd76",
+      "observed_at_utc": "2026-08-20T20:39:19.774Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "ab4147a4030a3710c9c06297818de67f306a0b879cf44d41b404b2af91676f73",
+      "body_excerpt_sanitized": "Sol ta no horário do lanche. Ta la no Bistro com a Lucia! Nao fala com ela agora. 😏",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "bcc0897b1e987324a6ecc285151562684de2261241e1fffaa9c66c4343dad16b",
+      "observed_at_utc": "2026-08-20T20:40:40.895Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "361847a8cfe5a8ddf3acd7a13c38b42b0649e7642bed9d44709076e29440afb9",
+      "body_excerpt_sanitized": "Sol",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "4009afc6a0d1cda7a1768e4df600004dd5613ef3d9e9a46cefa329eb47df665c",
+      "observed_at_utc": "2026-08-20T20:47:34.568Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "6e1fb1626e9b7692fa563d95a8b2ff2f87bc20846accd654b8ebf2f3249c17fe",
+      "sender_name_observed": "Tutu",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "25bb53af3ddb3519affea96c06f13267da74b6f0573623826b0fe3454cb9a30f",
+      "body_excerpt_sanitized": "Retirada do caixa de valor em dinheiro - 950 reais",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "saida",
+        "category": "saida_operacional",
+        "amount_cents": 95000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result",
+          "msg",
+          "msg",
+          "lote_texto_anexado",
+          "result",
+          "lote_midia_consolidado",
+          "ocr_attempt",
+          "ocr_result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "b85d13aa4102431c986e533267400874d6f96cce1df4f5d3023d615d6c01692b",
+      "observed_at_utc": "2026-08-20T20:48:14.001Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "005dc5a78e6ab1d7961900797ddc28fde84a2625be87b4884cf9ab6379c35a2e",
+      "body_excerpt_sanitized": "[image received]",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result",
+          "msg",
+          "msg",
+          "lote_texto_anexado",
+          "result",
+          "lote_midia_consolidado",
+          "ocr_attempt",
+          "ocr_result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "3b1a1b2703962b6bfcf6b259e7eb6266a98723b5036d690483db4723832ca615",
+      "observed_at_utc": "2026-08-20T20:48:14.137Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "4c50ed92afeb837e3740bd43733719fa76ca242e48d89c67695b55074bbb2d2d",
+      "body_excerpt_sanitized": "PG parcela 08/26 Aluna: Amanda De Souza Rogemonte *LA CG* - R$357,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 35700,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result",
+          "msg",
+          "msg",
+          "lote_texto_anexado",
+          "result",
+          "lote_midia_consolidado",
+          "ocr_attempt",
+          "ocr_result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "44cf65c81f014cee37b08232b2c9df1ca12985d0aec4cdb53e9efc4096de158f",
+      "observed_at_utc": "2026-08-20T20:50:46.514Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "fc45b9aa409bde653565af75b55f9ba5dd6e0c09503d58b0aa4a8d9fd5cb900a",
+      "body_excerpt_sanitized": "PG parcial parcela 09/2026 aluno Benício de Souza Amaral Costa - Kids CG R$3,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 300,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "a9b17ec22440a067055f8d447a505d15c806b1b13be7cf89ecb2baca85857794",
+      "observed_at_utc": "2026-08-20T20:51:42.519Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "361847a8cfe5a8ddf3acd7a13c38b42b0649e7642bed9d44709076e29440afb9",
+      "body_excerpt_sanitized": "Sol",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "4ae8e0b500bf033f2547fb85111495911f1a7b402d91772ff216f48a64e7784d",
+      "observed_at_utc": "2026-08-20T20:51:45.637Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "d39677735a6b350db288d46bc252f031a2cc51feefaf8c3956234b50185b7b90",
+      "body_excerpt_sanitized": "Sol, PG dinheiro parcial parcela 09/2026 aluno Benício de Souza Amaral Costa - Kids CG R$3,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 300,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "0176d53d5f1817aaa1053738f24d4117b9a804e7a947c64f2878f4d7ccb7b9ba",
+      "observed_at_utc": "2026-08-20T20:54:33.992Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "d39677735a6b350db288d46bc252f031a2cc51feefaf8c3956234b50185b7b90",
+      "body_excerpt_sanitized": "Sol, PG dinheiro parcial parcela 09/2026 aluno Benício de Souza Amaral Costa - Kids CG R$3,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 300,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "6403d68b52774fc78ef0eb45cce555c132f98bbb73ca3c5e186d93863e0b9e82",
+      "observed_at_utc": "2026-08-20T20:56:37.046Z",
+      "chat_id_md5": "8edb0026f8dc988efd552772b53c821f",
+      "sender_id_sha256": "13d472406dc7b99fda502163d2101a0866d85ae2545963fad333ea5dee838629",
+      "sender_name_observed": "Daiana",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "032cf2ea8b3548e2fd5ec962460911dc9bd5345aa94c5080593850186a6a221f",
+      "body_excerpt_sanitized": "Passaporte promocional do aluno Zion Rafael Machado feito via link de pagamento parcelado em 2x sem juros - R$400,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO LA RECREIO 🤑",
+        "unidade_id": "95553e96-971b-4590-a6eb-0201d013c14d",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "composto",
+        "amount_cents": 40000,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "interpretar_attempt"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "f05146b19f8e0d59e814bbc651982b1b64cbb1ab1aad1d6a9bf9ea8e8f91105a",
+      "observed_at_utc": "2026-08-20T21:01:51.082Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "76f8e567387b19dc37fe36305ff39fe968ff7d093b60be36e00ae15a2cf931a1",
+      "sender_name_observed": "Rose 🌻",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "1ce29f0beb5503c7f2beab7676884e043c6c63b230f37b3a36810779ac177061",
+      "body_excerpt_sanitized": "PG dinheiro parcela 08/2026 aluno Benício de Souza Amaral Costa - Kids CG R$347,00 PG parcial parcela 09/2026 aluno Benício de Souza Amaral Costa - Kids CG R$3,",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 35000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "legenda_irma_anexada",
+          "interpretar_attempt",
+          "msg"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "multiple_competencies_detected_requires_v3_compound_preview_ledger_before_write"
+      ]
+    },
+    {
+      "event_id_sha256": "c1b7fea58953f781be86c344ba85846ab4dc2f8ef68c6ba8ece6e98ca5d3ba5f",
+      "observed_at_utc": "2026-08-20T21:02:20.245Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "76f8e567387b19dc37fe36305ff39fe968ff7d093b60be36e00ae15a2cf931a1",
+      "sender_name_observed": "Rose 🌻",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "5b2dc5710bae1a3097013d6b20fba614d4997000ac953c66da71dae8a8a1cf5d",
+      "body_excerpt_sanitized": "Sol PG dinheiro parcela 08/2026 aluno Benício de Souza Amaral Costa - Kids CG R$347,00 PG parcial parcela 09/2026 aluno Benício de Souza Amaral Costa - Kids CG ",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 35000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "legenda_irma_anexada",
+          "interpretar_attempt",
+          "msg",
+          "ocr_attempt",
+          "ocr_result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "multiple_competencies_detected_requires_v3_compound_preview_ledger_before_write"
+      ]
+    },
+    {
+      "event_id_sha256": "15ccc6bed77c8a222ddcf61f267223c433e98996c7c6f2edc6245c040f0e4e37",
+      "observed_at_utc": "2026-08-20T21:03:18.444Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "76f8e567387b19dc37fe36305ff39fe968ff7d093b60be36e00ae15a2cf931a1",
+      "sender_name_observed": "Rose 🌻",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "b03aef79a2c1d8f4517655a05c61cbcaa2b0b8e06866acda462428dec2de23b6",
+      "body_excerpt_sanitized": "Sol, 347 reais na parcela de agosto e 3 reais na parcela de setembro em dinheiro",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 35000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa",
+          "identidade_envio",
+          "preview_enviado",
+          "result",
+          "msg",
+          "result",
+          "interpretar_result",
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "multiple_competencies_detected_requires_v3_compound_preview_ledger_before_write"
+      ]
+    },
+    {
+      "event_id_sha256": "99b0bcc35e6578e999ec17f997a3919437d855361004c66f945d95ec2773dad2",
+      "observed_at_utc": "2026-08-20T21:04:05.153Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "76f8e567387b19dc37fe36305ff39fe968ff7d093b60be36e00ae15a2cf931a1",
+      "sender_name_observed": "Rose 🌻",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "d5a3b925bb888d21a977d0369115d6d20d0210b4525fcf0d727628d6c401e342",
+      "body_excerpt_sanitized": "Nao sol, corrige, 347 a parcela de agosto e 3 reais a parcela de setembro, monta novamente pf?",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 300,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "preview_categoria_parcela_corrigida",
+          "result",
+          "msg",
+          "preview_categoria_parcela_corrigida",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "multiple_competencies_detected_requires_v3_compound_preview_ledger_before_write"
+      ]
+    },
+    {
+      "event_id_sha256": "2eb2a46b47b961cf45b6e5588e654f37f81fa5aa6d5305b67fefdcc01672d5e4",
+      "observed_at_utc": "2026-08-20T21:08:53.917Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "4d540f66d32ed9edf0bbb8f516d42022453a534354129b3901929423ac297618",
+      "body_excerpt_sanitized": "PG parcial parcela 08/26 Aluno: Yuri Gomes Pereira *LA CG* - R$53,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 5300,
+        "payment_method": "unknown",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "legenda_irma_anexada",
+          "interpretar_attempt",
+          "interpretar_result",
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa",
+          "identidade_envio"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "aafe2578015a4e3d778af8ba5bd75f2b669be13a8a330e955a71d1c594dceba6",
+      "observed_at_utc": "2026-08-20T21:08:53.961Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "c2037fa25f63894f7835b8e896857a49d08feb69d9f77bbb0552dc3052fac8e7",
+      "sender_name_observed": "n.",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "005dc5a78e6ab1d7961900797ddc28fde84a2625be87b4884cf9ab6379c35a2e",
+      "body_excerpt_sanitized": "[image received]",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "legenda_irma_anexada",
+          "interpretar_attempt",
+          "interpretar_result",
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa",
+          "identidade_envio"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "67ef7319ae6a337440696da7149b21942c9c9a491008afe6bb3af661ecf2b950",
+      "observed_at_utc": "2026-08-20T21:10:40.413Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "6e1fb1626e9b7692fa563d95a8b2ff2f87bc20846accd654b8ebf2f3249c17fe",
+      "sender_name_observed": "Tutu",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "e0661947c83fba4ad504e03d6792c07d5f10d0ea998043d496ec2e9387019c75",
+      "body_excerpt_sanitized": "Sol, retirada do caixa no valor de 950 reais (dinheiro) Dinheiro para levar para direção",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "saida",
+        "category": "saida_operacional",
+        "amount_cents": 95000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "identidade_autorizacao",
+          "lancado",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": true
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "8bd9156fe3444ffe59fe03781267525ecaf9fcb66eda0ae626dfb4e31ac58fe7",
+      "observed_at_utc": "2026-08-20T21:32:25.854Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "361847a8cfe5a8ddf3acd7a13c38b42b0649e7642bed9d44709076e29440afb9",
+      "body_excerpt_sanitized": "Sol",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "428193bc6b9435cd5a32b298b3512ad952f0d022dd751ca9fda03205c00b6e20",
+      "observed_at_utc": "2026-08-20T21:33:14.469Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": "image",
+      "has_media": true,
+      "body_sha256": "e0661947c83fba4ad504e03d6792c07d5f10d0ea998043d496ec2e9387019c75",
+      "body_excerpt_sanitized": "Sol, retirada do caixa no valor de 950 reais (dinheiro) Dinheiro para levar para direção",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "saida",
+        "category": "saida_operacional",
+        "amount_cents": 95000,
+        "payment_method": "dinheiro",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "result",
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "1afd8db98f4168a1d78a9e744f3fb4558d8609ba7d9b8df14a4cd0ac0ab61bd1",
+      "observed_at_utc": "2026-08-20T21:33:42.607Z",
+      "chat_id_md5": "ac8c6ccdfafde55449cd97e636bb000b",
+      "sender_id_sha256": "26ecb6bfd1931511f09cfa68cd623452580e10aba65d800d543c772c87a40210",
+      "sender_name_observed": "Luciano Alf",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "361847a8cfe5a8ddf3acd7a13c38b42b0649e7642bed9d44709076e29440afb9",
+      "body_excerpt_sanitized": "Sol",
+      "route": {
+        "nome_grupo": "FINANCEIRO BARRA",
+        "unidade_id": "368d47f5-2d88-4475-bc14-ba084a9a348e",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "ocr_attempt",
+          "ocr_result",
+          "midia_recusada",
+          "result",
+          "msg",
+          "result"
+        ],
+        "identity_evidence_identified": null,
+        "preview_sent_by_legacy": false,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "adf4d6478c4ae21325149c17eda02b4a4e1f5e420def838019b32b0b47980ed4",
+      "observed_at_utc": "2026-08-20T21:45:15.517Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": "document",
+      "has_media": true,
+      "body_sha256": "258af5dadb7f7904ebd00cc0216392f20f5a1fd48721ed10f06d836047aabb41",
+      "body_excerpt_sanitized": "[document received]",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "unknown",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "msg",
+          "lote_texto_anexado",
+          "result",
+          "lote_midia_consolidado",
+          "ocr_attempt",
+          "ocr_result",
+          "interpretar_attempt",
+          "interpretar_result",
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    },
+    {
+      "event_id_sha256": "23cca19aaf9c403be04ab99676e818310abdb8e5f07587fc4f64f1613b800621",
+      "observed_at_utc": "2026-08-20T21:45:15.771Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "0303a10ce1293a690f621dc3cc8bd0ba64e36284e7773b9d54c1b8a5d573f609",
+      "body_excerpt_sanitized": "PG pix parcela 08/2026 aluno Maurício Moreira de Melo - Kids CG R$377,00",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "parcela",
+        "amount_cents": 37700,
+        "payment_method": "pix",
+        "preview_status": "would_preview_private_shadow_only",
+        "approval_status": "none",
+        "resolver_status": "resolved"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "msg",
+          "msg",
+          "lote_texto_anexado",
+          "result",
+          "lote_midia_consolidado",
+          "ocr_attempt",
+          "ocr_result",
+          "interpretar_attempt",
+          "interpretar_result",
+          "canonica_result",
+          "responsavel_result",
+          "duplicata_caixa"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": false
+      },
+      "blocks": [],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence"
+      ]
+    },
+    {
+      "event_id_sha256": "c2e03d5f89abdd3059f56f5461469da33a2d163778533466102d2175f0a56049",
+      "observed_at_utc": "2026-08-20T21:46:22.065Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "sender_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+      "sender_name_observed": "Mayra 💖",
+      "media_type": null,
+      "has_media": false,
+      "body_sha256": "74f28faf5ed0d5f8fd7a62100024d689553a661e50019bcb25871a5912e09197",
+      "body_excerpt_sanitized": "Sol, foi pix",
+      "route": {
+        "nome_grupo": "FINANCEIRO L.A C.GRANDE",
+        "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+        "ativo": true
+      },
+      "shadow_decision": {
+        "operation": "entrada",
+        "category": "unknown",
+        "amount_cents": null,
+        "payment_method": "pix",
+        "preview_status": "blocked",
+        "approval_status": "none",
+        "resolver_status": "blocked"
+      },
+      "live_bridge_comparison": {
+        "actions_seen_near_event": [
+          "identidade_envio",
+          "preview_enviado",
+          "result",
+          "msg",
+          "preview_forma_corrigida",
+          "result",
+          "msg",
+          "identidade_autorizacao",
+          "lancado",
+          "result"
+        ],
+        "identity_evidence_identified": true,
+        "preview_sent_by_legacy": true,
+        "financial_write_observed_from_legacy": true
+      },
+      "blocks": [
+        "category_not_detected"
+      ],
+      "warnings": [
+        "sender_is_lid_readonly_runner_cannot_map_to_canonical_phone_without_live_identity_evidence",
+        "operation_or_category_outside_first_write_allowlist"
+      ]
+    }
+  ]
+}

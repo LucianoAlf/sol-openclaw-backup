@@ -1,0 +1,40 @@
+{
+  "gate": "sol-caixa-v3-validator-correcao-estorno",
+  "timestamp_utc": "2026-08-21T09:43:59Z",
+  "status": "pass_with_warnings",
+  "hashes": {
+    "caixa_financeiro_cjs": "967572c7ec0a075644615d9bfb7e94ec2095c6210cb873ecb4d711c74835794d"
+  },
+  "implemented": [
+    "bridge registra preview V3 com operacao financeira canonica: entrada ou saida",
+    "validator V3 compara operacao do preview contra operacao da RPC: entrada->lancar_recebimento, saida->lancar_saida",
+    "validator V3 exige valor, forma e categoria obrigatorios no payload financeiro",
+    "validator V3 exige valor, forma, categoria e operacao nao nulos no preview persistido",
+    "validator V3 revalida grupo oficial no banco quando a unidade autoriza qualquer membro do grupo",
+    "validator V3 revalida ator pelo helper canonico sol_caixa_autorizar_payload_v1",
+    "correcao de valor e estorno agora viram preview V3 e exigem pode antes da RPC",
+    "correcao simples de forma no bridge agora usa preview V3 + sol_caixa_corrigir_movimento_v1",
+    "sol_caixa_corrigir_movimento_v1 chama validator V3 antes de UPDATE",
+    "sol_caixa_estornar_movimento_v1 chama validator V3 antes de INSERT do movimento inverso",
+    "sol_acesso_restrito perdeu EXECUTE na RPC legada sol_caixa_corrigir_forma_recebimento"
+  ],
+  "verified": [
+    "node --check caixa-financeiro.cjs",
+    "v3-ledger-production.test.cjs: 3/3",
+    "v3-e2e-tres-grupos.test.cjs: 3/3",
+    "smoke SQL rollback: RPC sem approval bloqueia com v3_preview_id_obrigatorio",
+    "smoke SQL rollback: preview com valor nulo bloqueia com preview_valor_obrigatorio_v3",
+    "smoke SQL rollback: operacao divergente bloqueia com operacao_divergente_v3",
+    "smoke SQL rollback: grupo nao oficial bloqueia com grupo_oficial_obrigatorio_v3",
+    "smoke SQL rollback: approval valido consome e reuso bloqueia com approval_v3_ja_consumido",
+    "smoke SQL rollback: corrigir_movimento sem approval bloqueia",
+    "smoke SQL rollback: corrigir_movimento com approval valido passa",
+    "smoke SQL rollback: estornar_movimento sem approval bloqueia",
+    "smoke SQL rollback: estornar_movimento com approval valido passa"
+  ],
+  "warnings": [
+    "consumo_total em sol_caixa_v3_approval_consumos_v1 continua 0 porque os smokes usaram rollback; ainda falta caso vivo persistido",
+    "sol_caixa_abrir e sol_caixa_fechar continuam fora do approval V3",
+    "STRICT=1 ainda nao foi ligado"
+  ]
+}

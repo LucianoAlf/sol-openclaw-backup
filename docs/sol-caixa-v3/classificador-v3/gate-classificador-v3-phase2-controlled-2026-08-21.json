@@ -1,0 +1,36 @@
+{
+  "schema_version": "sol_caixa_v3_classifier_phase2_controlled_gate_v1",
+  "production_changes": false,
+  "database_migrations_applied": false,
+  "financial_mutations": 0,
+  "whatsapp_outbound": 0,
+  "strict_changed": false,
+  "isolated_postgres_sql": {
+    "status": "pass",
+    "engine": "postgres:16-alpine",
+    "checks": [
+      "canonical group accepted",
+      "canonical actor accepted",
+      "group rejected",
+      "actor rejected",
+      "substring false positive blocked",
+      "rule tie ambiguous"
+    ]
+  },
+  "phase1_regression": {
+    "fixtures": 8,
+    "passed": 8,
+    "failed": 0,
+    "forbidden_effects": 0
+  },
+  "legacy_snapshot_shadow": {
+    "status": "pass_with_coverage_gap",
+    "fixtures": 8,
+    "match": 2,
+    "legacy_not_exposed": 3,
+    "not_applicable": 3,
+    "divergence": 0,
+    "note": "The comparison invokes exported functions from the versioned runtime snapshot. It does not claim full bridge-path parity for operations not exposed as pure parser functions."
+  },
+  "next_gate": "Run the same SQL script only in a controlled database connected to official canonical helpers, then compare against live bridge observations in shadow mode."
+}

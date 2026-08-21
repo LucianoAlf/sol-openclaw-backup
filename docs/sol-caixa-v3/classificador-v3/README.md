@@ -28,6 +28,15 @@ O gate atual valida apenas o contrato local. A facade SQL, os helpers canonicos
 de grupo/unidade/ator e a comparacao com o parser legado real ainda exigem
 ambiente controlado antes de qualquer migration.
 
+## Fase 2 controlada
+
+Os artefatos `003_*` e `phase2-*` introduzem matcher por token e preveem a
+validacao com os helpers oficiais de grupo e ator. Eles foram executados em
+PostgreSQL efemero com stubs de mesma assinatura; isto prova a SQL, mas nao
+substitui a execucao futura contra os helpers oficiais. O comparador do parser
+usa o snapshot versionado e marca cobertura ausente como `legacy_not_exposed`,
+nunca como equivalencia.
+
 ## Rollout
 
 1. Shadow: classificador novo observa, parser antigo continua autoridade.

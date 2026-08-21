@@ -37,6 +37,14 @@ substitui a execucao futura contra os helpers oficiais. O comparador do parser
 usa o snapshot versionado e marca cobertura ausente como `legacy_not_exposed`,
 nunca como equivalencia.
 
+## Fase 3 — contrato dos helpers oficiais
+
+O catálogo do LA Report confirmou que os dois helpers canônicos retornam
+`jsonb`, não `boolean`. O artefato `004_*` e o runner `phase3-*` validam esse
+contrato em PostgreSQL efêmero e falham fechados quando `autorizado` está
+ausente ou falso. Isso ainda não substitui executar os **helpers oficiais** em
+uma branch/controlado Supabase.
+
 ## Rollout
 
 1. Shadow: classificador novo observa, parser antigo continua autoridade.

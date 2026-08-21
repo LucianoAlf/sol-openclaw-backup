@@ -1,0 +1,26 @@
+{
+  "schema_version": "sol_caixa_v3_phase3_official_helper_contract_v1",
+  "status": "pass",
+  "executed_at_utc": "2026-08-21T12:50:00Z",
+  "environment": "ephemeral_postgres_16_alpine",
+  "production_changes": false,
+  "database_migrations_applied": false,
+  "financial_mutations": 0,
+  "whatsapp_outbound": 0,
+  "helper_contract": {
+    "group": "sol_caixa_grupo_operacao_ok(uuid,text,text) returns jsonb",
+    "actor": "sol_caixa_ator_operacao_ok(uuid,text,text) returns jsonb",
+    "source": "read_only_catalog_inspection_2026_08_21"
+  },
+  "assertions": [
+    "classified_with_authorized_jsonb_helpers",
+    "group_rejected_before_actor",
+    "actor_rejected_after_group",
+    "missing_autorizado_fails_closed"
+  ],
+  "limitations": [
+    "helpers_are_contract_stubs_not_live_la_report_functions",
+    "supabase_controlled_branch_with_official_helpers_remains_required",
+    "bridge_real_shadow_comparison_remains_required"
+  ]
+}

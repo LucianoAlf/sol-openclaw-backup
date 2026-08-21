@@ -263,7 +263,9 @@ function montarPreview({ unidadeNome, valor, forma, categoria, aluno, competenci
   if (aluno) {
     bAluno.push(aluno);
     if (responsavelFinanceiro) bAluno.push(`Resp. financeiro: ${tituloNome(responsavelFinanceiro)}`);
-    else if (parcela || (canonica && canonica.ok)) bAluno.push('Resp. financeiro: não encontrado no cadastro');
+    else if (pagadorNome && alunoViaPagador === 'comprovante' && mesmaPessoa(pagadorNome, aluno)) {
+      bAluno.push(`Resp. financeiro: ${tituloNome(pagadorNome)} _(própria aluna no comprovante)_`);
+    }
     if (pagadorNome && alunoViaPagador === 'familia') {
       bAluno.push(`Pagou: ${tituloNome(pagadorNome)} _(deduzi pelo sobrenome — confere?)_`);
     } else if (pagadorNome && alunoViaPagador === 'responsavel') {
@@ -368,14 +370,19 @@ const _NAO_PESSOA = /(institui|banco|santander|itau|ita[uú]|nubank|bradesco|cai
 function extrairPagador(texto) {
   const t = String(texto || '').replace(/\r/g, '');
   const tentativas = [
-    /(?:^|\n)\s*de\s*:?\s*\n+\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'\s]{5,60})/i,
-    /remetente[\s\S]{0,120}?nome\s*:?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'\s]{5,60})/i,
-    /(?:pagador|origem|debitado de|enviado por)\s*:?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'\s]{5,60})/i,
+    /(?:^|\n)\s*de\s*:?\s*\n+\s*([^\n]{6,100})/i,
+    /remetente[\s\S]{0,180}?nome\s*:?\s*(?:\n+\s*)?([^\n]{6,100})/i,
+    /origem[\s\S]{0,220}?nome\s*:?\s*(?:\n+\s*)?([^\n]{6,100})/i,
+    /(?:pagador|origem|debitado de|enviado por)\s*:?\s*([^\n]{6,100})/i,
   ];
   for (const re of tentativas) {
     const m = t.match(re);
     if (!m) continue;
-    const nome = String(m[1]).split('\n')[0].replace(/\s+/g, ' ').trim();
+    // Alguns bancos prefixam o nome com CPF/CNPJ/identificador. Isso não é
+    // nome: removemos só o prefixo e deixamos a resolução para a RPC canônica.
+    const nome = String(m[1]).split('\n')[0]
+      .replace(/^(?:\d[\d.\-\/\s]{5,}\s+)+/, '')
+      .replace(/\s+/g, ' ').trim();
     if (nome.length < 6) continue;
     if (_NAO_PESSOA.test(nome)) continue;
     if (nome.split(' ').filter(Boolean).length < 2) continue;
@@ -442,7 +449,8 @@ function extrairComprovanteVisao(imagePath, env, { timeout = 45000 } = {}) {
     const prompt = 'Este e um comprovante de pagamento (Pix, transferencia ou cartao) de uma escola. '
       + 'Extraia e responda SOMENTE um JSON valido, sem markdown, com as chaves: '
       + 'valor (numero em reais, ex 509.00), '
-      + 'aluno (nome do aluno/pagador, string, ou null), '
+      + 'aluno (nome do aluno, se estiver explícito; string, ou null), '
+      + 'pagador_nome (nome de quem enviou o pagamento/origem do Pix; nunca o destinatário; string, ou null), '
       + 'forma ("pix" | "dinheiro" | "cartao" | "transferencia" | null). '
       + 'Se nao tiver certeza de um campo, use null.';
 
@@ -475,7 +483,8 @@ function extrairComprovanteVisao(imagePath, env, { timeout = 45000 } = {}) {
         if (typeof valor === 'string') valor = parseBRMoney(valor);
         resolve({
           valor: (typeof valor === 'number' && valor > 0) ? valor : null,
-          aluno: o.aluno || o.aluno_ou_pagador || o.pagador || null,
+          aluno: o.aluno || o.aluno_ou_pagador || null,
+          pagador_nome: o.pagador_nome || o.pagador || null,
           forma: (o.forma ? String(o.forma).toLowerCase() : null),
         });
       }
@@ -2018,7 +2027,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       if (!nomePlausivel(aluno)) aluno = null;              // "image received" nao e' aluno
       aluno = _alunoRotulado(legendaEfetiva) || aluno || _alunoFromCaption(legendaEfetiva) || alunoVis;
       if (!nomePlausivel(aluno)) aluno = null;
-      let alunoViaPagador = null, pagadorNome = null, candidatosAluno = null;
+      let alunoViaPagador = null, pagadorNome = (visao && visao.pagador_nome) || null, candidatosAluno = null;
       // sem sinal de forma: NAO chuta pix -- pergunta no preview.
       const formaIncerta = !forma;
       // Camada 4: casa com a parcela REAL do aluno (read-only) -- enriquece o preview
@@ -2077,9 +2086,19 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       // Camada 4.5: quem paga quase nunca e' o aluno. Se o BANCO nao confirmou o nome
       // (ou nao veio nome nenhum), identifica pelo PAGADOR do comprovante e recasa.
       if (!alunoConfirmado) {
-        pagadorNome = extrairPagador(ocrText);
+        pagadorNome = pagadorNome || extrairPagador(ocrText);
         if (pagadorNome) {
           try {
+            // A fatura canônica recebe nome + valor e resolve quando o pagador
+            // é a própria aluna ou quando o nome abrevia um sobrenome. Só cai
+            // na relação familiar se essa confirmação não for possível.
+            if (querParcela || multiplas) {
+              alunoConfirmado = await tentarCanonica(pagadorNome);
+              if (alunoConfirmado) alunoViaPagador = 'comprovante';
+            }
+            if (alunoConfirmado) {
+              log({ acao: 'pagador_canonica_confirmado', chatId });
+            } else {
             const idp = await pagadorFn(grp.unidade_id, pagadorNome);
             log({ acao: 'pagador_result', ok: !!(idp && idp.ok), via: idp && idp.via, total: idp && idp.total });
             if (idp && idp.ok && Array.isArray(idp.alunos) && idp.alunos.length) {
@@ -2090,6 +2109,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
                 aluno = idp.alunos[0].aluno_nome;
                 alunoViaPagador = idp.via;
                 const okCan = await tentarCanonica(aluno);
+                alunoConfirmado = okCan;
                 if (!okCan && !canonicaIndisponivel && podeFallbackLegadoParcela) {
                   try {
                     const m2 = await casarFn(grp.unidade_id, aluno, valor, competencia);
@@ -2100,6 +2120,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
               }
             } else if (!aluno) {
               log({ acao: 'pagador_sem_match', chatId });
+            }
             }
           } catch (e) { /* best-effort */ }
         }

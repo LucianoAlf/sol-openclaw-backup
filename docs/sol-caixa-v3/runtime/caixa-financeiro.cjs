@@ -81,6 +81,39 @@ function extrairSomaAditivaPagamento(texto) {
   return soma > 0 ? { total: Number(soma.toFixed(2)), partes: valores.map((m) => m.valor) } : null;
 }
 
+// Multi-aluno é uma intenção de negócio, não uma variação de pagamento composto.
+// Esta função só roteia para o fluxo seguro; ela nunca escolhe aluno, valor ou fatura.
+function detectarContextoMultiAluno(texto) {
+  const t = _normConf(texto);
+  if (!t) return false;
+  const pluralidade = /\b(?:dois|2|ambos|mais de um|varios|varias)\s+alun(?:o|os|a|as)\b|\balunos\b|\bpassaportes\b/.test(t);
+  const nomesEmConjunto = /\balunos?\b[\s:\-]+[^\n]{3,120}\s+\be\s+[^\n]{3,120}/.test(t)
+    || /\b(?:joao|maria|pedro|ana)\b[^\n]{0,80}\s+\be\s+[^\n]{3,80}/.test(t);
+  return pluralidade && (nomesEmConjunto || /\b(?:dois|2|ambos|mais de um)\b/.test(t));
+}
+
+function validarIntencaoMultiAluno(raw, valorComprovante, defaults = {}) {
+  if (!raw || typeof raw !== 'object') return { ok: false, motivo: 'intencao_ausente' };
+  const itensRaw = Array.isArray(raw.itens) ? raw.itens : [];
+  const total = Number(raw.valor_total || valorComprovante || 0);
+  const categoriaPadrao = String(raw.categoria || defaults.categoria || '').toLowerCase() || null;
+  const forma = String(raw.forma || defaults.forma || '').toLowerCase() || null;
+  const competenciaPadrao = raw.competencia || defaults.competencia || null;
+  if (itensRaw.length < 2) return { ok: false, motivo: 'dois_itens_obrigatorios', total, forma, categoria: categoriaPadrao };
+  const itens = itensRaw.map((item) => ({
+    aluno_nome: tituloNome(item && (item.aluno_nome || item.aluno || '')),
+    valor: Number(item && item.valor || 0),
+    competencia: item && item.competencia || competenciaPadrao || null,
+    categoria: String(item && item.categoria || categoriaPadrao || '').toLowerCase() || null,
+  }));
+  if (!total || !itens.every((i) => nomePlausivel(i.aluno_nome) && i.valor > 0 && i.categoria)) {
+    return { ok: false, motivo: 'itens_incompletos', total, forma, categoria: categoriaPadrao, itens };
+  }
+  const soma = Number(itens.reduce((s, i) => s + i.valor, 0).toFixed(2));
+  if (Math.abs(soma - total) > 0.01) return { ok: false, motivo: 'soma_divergente', total, soma, forma, categoria: categoriaPadrao, itens };
+  return { ok: true, tipo_recebimento: 'multi_aluno', valor_total: total, forma, categoria: categoriaPadrao, itens, soma_itens: soma };
+}
+
 const PRODUTO_LOJINHA_RE = /\b(lojinha|loja|cordas?|palhetas?|baquetas?|capotraste|afinador(?:es)?|cabos?|correia|encordoamento|livro|apostila|camiseta)\b/i;
 function detectarLojinhaProduto(texto) {
   const t = String(texto || '');
@@ -363,6 +396,22 @@ function montarPreview({ unidadeNome, valor, forma, categoria, aluno, competenci
     return b[0] + '\n\n' + itens.join('\n');
   };
   return blocos.map(formatarBloco).join('\n\n');
+}
+
+function montarPreviewMultiAluno({ unidadeNome, valorTotal, forma, categoria, itens }) {
+  const formaTxt = forma === 'cartao' ? 'cartão' : (forma || '❓ forma não identificada');
+  const linhas = (Array.isArray(itens) ? itens : []).map((item) => {
+    const fatura = item.descricao ? ` — ${item.descricao}` : '';
+    const comp = item.competencia ? ` · ${item.competencia}` : '';
+    return `• *${item.aluno_nome}*: ${fmtBRL(item.valor)}${comp}${fatura}`;
+  });
+  return [
+    `📄 *Comprovante multi-aluno — ${unidadeNome}*`,
+    `*RECEBIMENTO*\n\n• *${fmtBRL(valorTotal)}* · ${formaTxt}\n• Categoria: ${categoria || 'recebimento'}`,
+    `*ITENS DO LOTE*\n\n${linhas.join('\n')}`,
+    `✅ Soma dos itens confere com o comprovante: ${fmtBRL(valorTotal)}`,
+    '👉 *Posso lançar o lote completo no caixa de hoje?* Responde *pode*',
+  ].join('\n\n');
 }
 
 // Nome de quem PAGOU, lido do comprovante ("De\nFULANO", "Detalhes do remetente ... Nome X").
@@ -660,6 +709,32 @@ function corrigirMovimentoCaixa(payload, env) {
 
 function estornarMovimentoCaixa(payload, env) {
   return chamarRpcCaixa('sol_caixa_estornar_movimento_v1', payload, env);
+}
+
+// A RPC REST precisa dos quatro argumentos nomeados; usa um wrapper dedicado
+// para não deixar o bridge montar SQL ou tocar tabelas cruas.
+function resolverMultiAlunoCaixaV1(payload, { url, key } = carregarEnv()) {
+  return new Promise((resolve, reject) => {
+    if (!key) return reject(new Error('missing SUPABASE service key'));
+    const body = JSON.stringify({
+      p_unidade_id: payload.unidade_id,
+      p_itens: payload.itens,
+      p_valor_total: payload.valor_total,
+      p_as_of: payload.as_of || null,
+    });
+    const u = new URL(`${url}/rest/v1/rpc/sol_caixa_resolver_multi_aluno_v1`);
+    const req = https.request({ hostname: u.hostname, path: u.pathname, method: 'POST', headers: {
+      apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body),
+    }}, (res) => {
+      let data = ''; res.on('data', (c) => { data += c; });
+      res.on('end', () => { try { resolve(data ? JSON.parse(data) : null); } catch (e) { reject(new Error(`resposta invalida (${res.statusCode})`)); } });
+    });
+    req.on('error', reject); req.setTimeout(15000, () => req.destroy(new Error('timeout resolver multi-aluno'))); req.write(body); req.end();
+  });
+}
+
+function lancarRecebimentoLote(payload, env) {
+  return chamarRpcCaixa('sol_caixa_lancar_recebimento_lote_v1', payload, env);
 }
 
 function extrairCorrecaoForma(text) {
@@ -1345,6 +1420,33 @@ function interpretarComprovante(texto, { timeout = 30000 } = {}) {
   });
 }
 
+// O LLM interpreta texto livre, mas não pode escrever nem decidir a fatura.
+// A saída passa por validarIntencaoMultiAluno + resolver canônico no banco.
+function interpretarMultiAluno(texto, { timeout = 30000 } = {}) {
+  return new Promise((resolve) => {
+    const t = String(texto || '').trim();
+    if (t.length < 3) return resolve(null);
+    const prompt = 'Recebimento de escola de música para MAIS DE UM aluno. Extraia somente o que está explícito. '
+      + 'Responda SOMENTE JSON válido: '
+      + '{"tipo_recebimento":"multi_aluno","valor_total":720,"forma":"pix|dinheiro|cartao|transferencia|cheque|null",'
+      + '"categoria":"parcela|passaporte|matricula|lojinha|venda|outro|null","competencia":"08/2026|null",'
+      + '"itens":[{"aluno_nome":"Nome", "valor":360|null, "competencia":"08/2026|null", "categoria":"passaporte|null"}]}. '
+      + 'Nunca invente divisão: se houver dois alunos mas apenas total, devolva os nomes com valor null. '
+      + 'Não autorize, não faça cálculos financeiros, não escolha fatura.\n\nTEXTO:\n' + t.slice(0, 2500);
+    execFile(
+      '/home/sol/.hermes/hermes-agent/venv/bin/python',
+      ['-m', 'hermes_cli.main', 'chat', '-Q', '--source', 'tool', '--max-turns', '1', '--ignore-rules', '-q', prompt],
+      { cwd: '/home/sol', timeout, maxBuffer: 256 * 1024,
+        env: Object.assign({}, process.env, { HOME: process.env.HOME || '/home/sol', HERMES_HOME: process.env.HERMES_HOME || '/home/sol/.hermes/profiles/sol' }) },
+      (err, stdout) => {
+        if (err) return resolve(null);
+        const o = _parseVisionJson(stdout);
+        return resolve(o && typeof o === 'object' ? o : null);
+      }
+    );
+  });
+}
+
 // tipo_fatura do contrato -> categoria do caixa
 const _TIPO_CAT = { parcela: 'parcela', passaporte_taxa_matricula: 'passaporte',
   lojinha_produto: 'lojinha', venda_ingressos: 'venda', avulsa_outro: 'outro' };
@@ -1529,7 +1631,7 @@ function categoriaEhSaida(categoria) {
   return ['seguranca', 'despesa', 'retirada', 'troco'].includes(String(categoria || '').toLowerCase());
 }
 
-function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, lancarSaidaFn = lancarSaidaCaixa, corrigirFormaFn = corrigirFormaRecebimento, buscarCorrecaoFn = buscarLancamentoParaCorrecao, buscarMovimentosFn = buscarMovimentosCaixa, corrigirMovimentoFn = corrigirMovimentoCaixa, estornarMovimentoFn = estornarMovimentoCaixa, registrarPreviewV3Fn = registrarPreviewV3, registrarApprovalV3Fn = registrarApprovalV3, visaoFn = extrairComprovanteVisao, ocrFn = ocrLocal, interpretarFn = interpretarComprovante, casarFn = casarParcela, responsavelFn = buscarResponsavel, pagadorFn = identificarPorPagador, canonicaFn = casarParcelaCanonica, faturasMesFn = buscarCompostoFaturasMes, duplicataFn = jaLancadoHoje, identidadeFn = identificarPessoa, resumoFn = resumoDoDia, log = () => {}, janelaMs = 30 * 60 * 1000, dryRun = (process.env.SOL_CAIXA_DRYRUN === '1') }) {
+function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, lancarLoteFn = lancarRecebimentoLote, lancarSaidaFn = lancarSaidaCaixa, corrigirFormaFn = corrigirFormaRecebimento, buscarCorrecaoFn = buscarLancamentoParaCorrecao, buscarMovimentosFn = buscarMovimentosCaixa, corrigirMovimentoFn = corrigirMovimentoCaixa, estornarMovimentoFn = estornarMovimentoCaixa, registrarPreviewV3Fn = registrarPreviewV3, registrarApprovalV3Fn = registrarApprovalV3, visaoFn = extrairComprovanteVisao, ocrFn = ocrLocal, interpretarFn = interpretarComprovante, interpretarMultiFn = interpretarMultiAluno, resolverMultiFn = resolverMultiAlunoCaixaV1, casarFn = casarParcela, responsavelFn = buscarResponsavel, pagadorFn = identificarPorPagador, canonicaFn = casarParcelaCanonica, faturasMesFn = buscarCompostoFaturasMes, duplicataFn = jaLancadoHoje, identidadeFn = identificarPessoa, resumoFn = resumoDoDia, log = () => {}, janelaMs = 30 * 60 * 1000, dryRun = (process.env.SOL_CAIXA_DRYRUN === '1') }) {
   // grupos: { [chatId]: { unidade_id, nome } }
   const pendentes = new Map();   // chatId -> [ {previewId, unidade_id, nome, valor, forma, categoria, aluno, idemKey, origem, ts} ]
   const lancadosRecentes = new Map(); // chatId -> [ {confirmMessageId, movimentacao_id, unidade_id, nome, valor, forma, ts} ]
@@ -1642,6 +1744,79 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       if (v3LedgerStrict) throw e;
       return null;
     }
+  }
+
+  async function abrirFluxoMultiAluno({ event, grupo, textoFonte, intent, agora, origemMessageId }) {
+    const arr = limparVelhos(event.chatId, agora);
+    const colocarEmRevisao = async (motivo, extra = {}) => {
+      const pendencia = {
+        tipoOperacao: 'manual_review_multi_student', unidade_id: grupo.unidade_id, nome: grupo.nome,
+        multiTexto: textoFonte, valor: intent && intent.valor_total || extra.valor || null,
+        forma: intent && intent.forma || extra.forma || null, categoria: intent && intent.categoria || extra.categoria || null,
+        origem: origemMessageId || event.messageId, idemKey: `${event.chatId}:${origemMessageId || event.messageId}:multi`,
+        ts: agora, motivoMulti: motivo,
+      };
+      arr.push(pendencia); pendentes.set(event.chatId, arr);
+      return pendencia;
+    };
+    if (!intent || !intent.ok) {
+      await colocarEmRevisao(intent && intent.motivo || 'itens_incompletos');
+      await sendFn(event.chatId, '⚠️ Entendi que este comprovante é de mais de um aluno. Não vou escolher um deles nem dividir o total sozinho. Manda cada aluno com seu valor, por exemplo:\n• João — R$ 360\n• Pedro — R$ 360');
+      log({ acao: 'manual_review_multi_student', chatId: event.chatId, motivo: intent && intent.motivo || 'itens_incompletos' });
+      return { acao: 'manual_review_multi_student' };
+    }
+    if (!intent.forma) {
+      await colocarEmRevisao('forma_ausente');
+      await sendFn(event.chatId, '⚠️ Entendi os dois alunos e a divisão, mas falta a forma de pagamento. Me diz: pix, dinheiro, cartão, cheque ou transferência.');
+      return { acao: 'manual_review_multi_student' };
+    }
+    let resolvido = null;
+    try {
+      resolvido = await resolverMultiFn({ unidade_id: grupo.unidade_id, itens: intent.itens, valor_total: intent.valor_total });
+    } catch (e) {
+      log({ acao: 'resolver_multi_aluno_erro', chatId: event.chatId, erro: String(e && e.message) });
+    }
+    if (!resolvido || !resolvido.ok || !Array.isArray(resolvido.itens)) {
+      await colocarEmRevisao(resolvido && resolvido.motivo || 'itens_nao_validados');
+      await sendFn(event.chatId, '⚠️ Entendi a divisão, mas ainda não consegui confirmar todas as faturas oficiais. Não vou lançar parcialmente. Confere aluno, competência e valor de cada um.');
+      log({ acao: 'manual_review_multi_student', chatId: event.chatId, motivo: resolvido && resolvido.motivo || 'itens_nao_validados' });
+      return { acao: 'manual_review_multi_student' };
+    }
+    if (!v3LedgerAtivo) {
+      await colocarEmRevisao('v3_indisponivel');
+      await sendFn(event.chatId, '⚠️ Não preparei o lote: o trilho seguro de aprovação não está disponível agora. Não responda *pode*; tenta de novo em instantes.');
+      return { acao: 'manual_review_multi_student' };
+    }
+    const itens = resolvido.itens.map((item) => ({
+      aluno_nome: item.aluno_nome, valor: Number(item.valor), competencia: item.competencia || null,
+      categoria: item.categoria || intent.categoria, descricao: item.descricao || null,
+      canonical_fatura_id: item.canonical_fatura_id || null, responsavel_financeiro: item.responsavel_financeiro || null,
+    }));
+    const texto = montarPreviewMultiAluno({ unidadeNome: grupo.nome, valorTotal: intent.valor_total, forma: intent.forma, categoria: intent.categoria, itens });
+    const previewId = await sendFn(event.chatId, texto);
+    let idEnviou = null;
+    try { idEnviou = await identidadeFn(event.senderPhone, grupo.unidade_id); } catch (e) { /* melhor esforço */ }
+    const pendencia = {
+      previewId, tipoOperacao: 'lancar_recebimento_lote', unidade_id: grupo.unidade_id, nome: grupo.nome,
+      valor: intent.valor_total, forma: intent.forma, categoria: intent.categoria, itens,
+      descricao: `Lote multi-aluno (${itens.length} itens)`, aluno: null, competencia: null,
+      origem: origemMessageId || event.messageId, idemKey: `${event.chatId}:${origemMessageId || event.messageId}:lote-multi`,
+      enviadoPor: nomeParaCarimbo(idEnviou, event), ts: agora,
+    };
+    const v3 = await registrarPreviewPublicoV3({
+      event, grupo, previewId, texto, pendencia,
+      result: { acao: 'preview_multi_aluno_enviado', itens: itens.length, valor_total: intent.valor_total },
+    });
+    if (!v3 || !v3.preview_id || !v3.preview_hash) {
+      await sendFn(event.chatId, '⚠️ Não deixei esse lote pendente porque o preview seguro não foi registrado. Não responda *pode*; tenta de novo em instantes.');
+      log({ acao: 'preview_multi_aluno_sem_v3', chatId: event.chatId });
+      return { acao: 'preview_multi_aluno_sem_v3' };
+    }
+    pendencia.v3PreviewId = v3.preview_id;
+    pendencia.v3PreviewHash = v3.preview_hash;
+    arr.push(pendencia); pendentes.set(event.chatId, arr);
+    log({ acao: 'preview_multi_aluno_enviado', chatId: event.chatId, itens: itens.length, valor_total: intent.valor_total });
+    return { acao: 'preview_multi_aluno_enviado', previewId };
   }
 
   function lembrarLancado(chatId, item) {
@@ -2075,6 +2250,15 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       categoria = categoria || categoriaLegenda;
       const competenciaHumana = extrairCompetenciaTexto(legendaEfetiva);
       competencia = competencia || competenciaHumana;
+      // Antes de qualquer casador singular: pluralidade contextual abre um
+      // contrato próprio. Regex só roteia; LLM extrai; banco confirma itens.
+      if (detectarContextoMultiAluno(textoClassificacao)) {
+        let multiRaw = null;
+        try { multiRaw = await interpretarMultiFn(textoClassificacao); }
+        catch (e) { log({ acao: 'interpretar_multi_aluno_erro', chatId, erro: String(e && e.message) }); }
+        const intentMulti = validarIntencaoMultiAluno(multiRaw, valor, { forma, categoria, competencia });
+        return abrirFluxoMultiAluno({ event, grupo: grp, textoFonte: textoClassificacao, intent: intentMulti, agora, origemMessageId: event.messageId });
+      }
       if (!nomePlausivel(aluno)) aluno = null;              // "image received" nao e' aluno
       aluno = _alunoRotulado(legendaEfetiva) || aluno || _alunoFromCaption(legendaEfetiva) || alunoVis;
       if (!nomePlausivel(aluno)) aluno = null;
@@ -2292,6 +2476,35 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
     {
       const arrP = limparVelhos(chatId, agora);
       const txt = String(event.body || '').trim();
+
+      // A equipe pode completar a divisão depois do comprovante. Reinterpreta
+      // o conjunto original + complemento, nunca deixa a correção cair no
+      // handler de categoria singular.
+      if (!event.hasMedia && txt && !casarPode(txt).pode) {
+        const manuais = arrP.filter((p) => p.tipoOperacao === 'manual_review_multi_student');
+        const alvoManual = event.quotedMessageId
+          ? manuais.find((p) => p.previewId === event.quotedMessageId || p.origem === event.quotedMessageId)
+          : (manuais.length === 1 ? manuais[0] : null);
+        if (alvoManual) {
+          let multiRaw = null;
+          const textoFonte = `${alvoManual.multiTexto || ''}\n${txt}`.trim();
+          try { multiRaw = await interpretarMultiFn(textoFonte); }
+          catch (e) { log({ acao: 'interpretar_multi_aluno_correcao_erro', chatId, erro: String(e && e.message) }); }
+          const intentMulti = validarIntencaoMultiAluno(multiRaw, alvoManual.valor, {
+            forma: extrairForma(txt, null) || alvoManual.forma,
+            categoria: _categoriaFromCaption(txt) || alvoManual.categoria,
+            competencia: extrairCompetenciaTexto(txt) || null,
+          });
+          if (!intentMulti.ok) {
+            alvoManual.multiTexto = textoFonte; alvoManual.ts = agora;
+            await sendFn(chatId, 'Ainda falta uma divisão verificável por aluno. Manda os dois assim: *Nome — R$ valor*; não vou usar só o total.');
+            log({ acao: 'manual_review_multi_student_continua', chatId, motivo: intentMulti.motivo });
+            return { acao: 'manual_review_multi_student' };
+          }
+          pendentes.set(chatId, arrP.filter((p) => p !== alvoManual));
+          return abrirFluxoMultiAluno({ event, grupo: grp, textoFonte, intent: intentMulti, agora, origemMessageId: alvoManual.origem });
+        }
+      }
 
       // 1.5a) CORRECAO DE FORMA: "Sol, foi pix" / "nao e cartao, e pix".
       // Antes do lançamento, remonta o preview. Depois do lançamento, muda só a
@@ -2903,6 +3116,52 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
         await sendFn(chatId, `⚠️ Não consegui corrigir: ${rOp && rOp.motivo ? rOp.motivo : 'erro desconhecido'}.`);
         return { acao: 'movimento_correcao_recusada', motivo: rOp && rOp.motivo };
       }
+      if (alvo.tipoOperacao === 'lancar_recebimento_lote') {
+        if (!v3LedgerAtivo || !alvo.v3PreviewId || !alvo.v3PreviewHash || !Array.isArray(alvo.itens) || alvo.itens.length < 2) {
+          await sendFn(chatId, '⚠️ Não lancei: esse lote não tem o vínculo seguro completo. Reenvia o comprovante para gerar um preview novo.');
+          log({ acao: 'lote_multi_bloqueado_sem_v3', chatId });
+          return { acao: 'lote_multi_bloqueado_sem_v3' };
+        }
+        let idAut = null;
+        try { idAut = await identidadeFn(event.senderPhone, alvo.unidade_id); } catch (e) { /* melhor esforço */ }
+        const autorizadoPor = nomeParaCarimbo(idAut, event);
+        let approval = null;
+        try { approval = await registrarApprovalPublicoV3({ event, alvo, decision: 'approved' }); }
+        catch (e) {
+          await sendFn(chatId, '⚠️ Não lancei o lote: não consegui registrar a aprovação segura. Tenta de novo em instantes.');
+          return { acao: 'lote_multi_approval_erro' };
+        }
+        if (!approval || !approval.approval_id) {
+          await sendFn(chatId, '⚠️ Não lancei o lote: faltou vínculo entre o preview e a aprovação. Reenvia o comprovante para gerar um preview novo.');
+          return { acao: 'lote_multi_approval_sem_v3' };
+        }
+        const payloadLote = {
+          unidade_id: alvo.unidade_id, valor: String(alvo.valor), forma: alvo.forma, categoria: alvo.categoria,
+          itens: alvo.itens, idempotency_key: alvo.idemKey, ator_numero: senderNum, ator_papel: 'grupo',
+          chat_id: chatId, grupo_jid: chatId, origem_message_id: alvo.origem, preview_message_id: alvo.previewId,
+          enviado_por: alvo.enviadoPor || null, autorizado_por: autorizadoPor,
+          v3_preview_id: alvo.v3PreviewId, v3_preview_hash: alvo.v3PreviewHash,
+          v3_approval_id: approval.approval_id, v3_approval_event_hash: approval.approval_event_hash,
+          v3_actor_id_hash: approval.actor_id_hash, v3_ledger_required: '1',
+        };
+        let lote;
+        try { lote = await lancarLoteFn(payloadLote); }
+        catch (e) {
+          await sendFn(chatId, '⚠️ Não lancei o lote: não consegui concluir a operação atômica. Nada foi lançado parcialmente.');
+          log({ acao: 'lote_multi_rpc_erro', chatId, erro: String(e && e.message) });
+          return { acao: 'lote_multi_rpc_erro' };
+        }
+        pendentes.set(chatId, arr.filter((p) => p !== alvo));
+        if (lote && lote.ok) {
+          const linhas = (lote.movimentacoes || []).map((m) => `• ${m.aluno_nome}: ${fmtBRL(m.valor)}`).join('\n');
+          await sendFn(chatId, `✅ Lancei o lote no caixa da ${alvo.nome}: ${fmtBRL(alvo.valor)} (${alvo.forma}).\n${linhas}\n_Operação única e auditada; nenhum item foi lançado parcialmente._`);
+          log({ acao: 'lote_multi_lancado', chatId, lote_id: lote.lote_id, itens: alvo.itens.length });
+          return { acao: 'lote_multi_lancado', lote_id: lote.lote_id };
+        }
+        await sendFn(chatId, '⚠️ Não lancei o lote: a validação final mudou ou alguma fatura não confere. Nada foi lançado parcialmente. Reenvia para gerar um preview novo.');
+        log({ acao: 'lote_multi_recusado', chatId, motivo: lote && lote.motivo });
+        return { acao: 'lote_multi_recusado', motivo: lote && lote.motivo };
+      }
       if (alvo.divisao && alvo.divisao.length >= 2) {
         const linhas = alvo.divisao.map((p) => `• ${p.label}: ${fmtBRL(p.valor)}`).join('\n');
         await sendFn(chatId, `⚠️ Não lancei: esse comprovante está marcado como pagamento dividido.\n${linhas}\n\nConfirma/manda cada parte separada para eu lançar sem misturar.`);
@@ -3034,17 +3293,17 @@ function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slic
 
 module.exports = {
   parseBRMoney, extrairValor, extrairForma, detectarComprovante, casarPode,
-  montarPreview, fmtBRL, carregarEnv, lancarRecebimento, lancarSaidaCaixa, corrigirFormaRecebimento, buscarLancamentoParaCorrecao,
+  montarPreview, montarPreviewMultiAluno, fmtBRL, carregarEnv, lancarRecebimento, lancarRecebimentoLote, resolverMultiAlunoCaixaV1, lancarSaidaCaixa, corrigirFormaRecebimento, buscarLancamentoParaCorrecao,
   buscarMovimentosCaixa, corrigirMovimentoCaixa, estornarMovimentoCaixa, registrarPreviewV3, registrarApprovalV3, criarHandlerFinanceiro,
   confirmacaoLimpa, classificarMidia, bodyLimpo, nomeDoAtor, buscarResponsavel, mesmaPessoa, pagamentoMultiplo,
-  extrairDivisaoPagamento, extrairSomaAditivaPagamento, extrairAdicionalPagamento, detectarLojinhaProduto,
+  extrairDivisaoPagamento, extrairSomaAditivaPagamento, extrairAdicionalPagamento, detectarLojinhaProduto, detectarContextoMultiAluno, validarIntencaoMultiAluno,
   identificarPessoa, nomeParaCarimbo, ehPerguntaDeCaixa, resumoDoDia, montarResumoCaixa,
   extrairCartao, extrairValorOcr, extrairPagador, identificarPorPagador, nomePlausivel, _alunoRotulado, _alunoFromCaption, _alunoSuspeito,
   _cursoRotulado, _confirmacaoManualFatura,
   casarParcelaCanonica, linhasDaFatura, categoriaDaFatura, descricaoDaFatura, jaLancadoHoje,
   periodoQuitacao, extrairPeriodoMeses,
   extrairCompetenciaTexto, compostoDeFaturas, buscarCompostoFaturasMes, descricaoDoComposto,
-  extrairComprovanteVisao, interpretarComprovante, casarParcela,
+  extrairComprovanteVisao, interpretarComprovante, interpretarMultiAluno, casarParcela,
   ocrLocal,
   extrairCorrecaoForma, extrairLancamentoCitado, extrairComandoMovimento,
   categoriaEhSaida,

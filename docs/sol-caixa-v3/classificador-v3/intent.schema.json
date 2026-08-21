@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sol.local/schemas/sol-caixa-v3-intent.schema.json",
+  "title": "Sol Caixa V3 Intent",
+  "type": "object",
+  "required": ["ok", "stage", "status", "contract_version", "writes"],
+  "additionalProperties": false,
+  "properties": {
+    "ok": { "type": "boolean" },
+    "stage": { "enum": ["deterministic", "regex_suggestion", "llm_skill"] },
+    "status": {
+      "enum": [
+        "classified",
+        "ambiguous",
+        "missing_evidence",
+        "media_pending",
+        "manual_review",
+        "unsupported",
+        "no_match",
+        "rejected"
+      ]
+    },
+    "rule_id": { "type": "string" },
+    "operacao": {
+      "enum": [
+        "lancar_recebimento",
+        "lancar_saida",
+        "correcao_forma",
+        "correcao_movimento",
+        "estornar_movimento"
+      ]
+    },
+    "categoria": {
+      "enum": [
+        "parcela",
+        "passaporte",
+        "matricula",
+        "lojinha",
+        "banda",
+        "composto",
+        "seguranca",
+        "saida_operacional",
+        "unknown"
+      ]
+    },
+    "forma": {
+      "enum": ["pix", "dinheiro", "cartao_debito", "cartao_credito", "unknown"]
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "requires": { "type": "array", "items": { "type": "string" } },
+    "reason": { "type": "string" },
+    "contract_version": { "type": "integer", "minimum": 1 },
+    "writes": { "const": false }
+  }
+}

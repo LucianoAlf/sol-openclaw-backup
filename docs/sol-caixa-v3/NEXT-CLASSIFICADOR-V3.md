@@ -117,3 +117,28 @@ unsupported
 - LLM nao escolhe unidade.
 - LLM nao chama RPC financeira.
 - Nao ligar `STRICT=1` ate caso vivo com consumo real.
+
+## Fase 1 local — 2026-08-21
+
+Artefatos criados em `classificador-v3/`:
+
+- migration draft `001_sol_classificacao_regras_draft.sql`;
+- facade intent-only `002_sol_caixa_v3_classificar_evento_draft.sql`;
+- schema JSON de intencao `intent.schema.json`;
+- fixtures locais dos 3 grupos `sol-caixa-v3-classificador-fixtures.json`;
+- runner local `gate-classificador-v3-local-runner.mjs`;
+- report `gate-classificador-v3-local-2026-08-21.json`.
+
+Resultado do gate local:
+
+```text
+fixture_count: 8
+passed: 8
+failed: 0
+database_migrations_applied: false
+whatsapp_deploy: false
+strict_changed: false
+financial_mutations: 0
+```
+
+Proximo passo: revisar o contrato e, se aprovado, aplicar a migration em ambiente controlado para rodar shadow comparison contra o parser antigo.

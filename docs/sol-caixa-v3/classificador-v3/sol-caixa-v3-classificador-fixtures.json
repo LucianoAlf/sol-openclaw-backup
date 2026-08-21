@@ -1,0 +1,162 @@
+[
+  {
+    "fixture_id": "CLF-V3-001",
+    "case_name": "Campo Grande - correcao de forma pix",
+    "group_key": "campo_grande",
+    "group_jid": "120363000000001@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "texto_normalizado": "sol, foi pix, nao foi cartao",
+    "legacy_parser_result": { "status": "matched", "operacao": "correcao_forma" },
+    "expected_intent": {
+      "status": "classified",
+      "stage": "deterministic",
+      "operacao": "correcao_forma",
+      "forma": "pix",
+      "requires": ["movimentacao_id"],
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-002",
+    "case_name": "Barra - estorno por mensagem citada",
+    "group_key": "barra",
+    "group_jid": "120363000000002@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "quoted_message_id": "wamid.estorno.exemplo",
+    "texto_normalizado": "sol, estorna esse lancamento",
+    "legacy_parser_result": { "status": "matched", "operacao": "estornar_movimento" },
+    "expected_intent": {
+      "status": "classified",
+      "stage": "deterministic",
+      "operacao": "estornar_movimento",
+      "requires": ["movimentacao_id"],
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-003",
+    "case_name": "Recreio - saida seguranca dinheiro",
+    "group_key": "recreio",
+    "group_jid": "120363000000003@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "texto_normalizado": "sol, saida seguranca 100 no dinheiro",
+    "legacy_parser_result": { "status": "matched_after_hotfix", "operacao": "lancar_saida" },
+    "expected_intent": {
+      "status": "classified",
+      "stage": "deterministic",
+      "operacao": "lancar_saida",
+      "categoria": "seguranca",
+      "forma": "dinheiro",
+      "valor_centavos": 10000,
+      "requires": [],
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-004",
+    "case_name": "Campo Grande - entrada parcela pix",
+    "group_key": "campo_grande",
+    "group_jid": "120363000000001@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "texto_normalizado": "sol, parcela da mayara violao setembro pix 405",
+    "legacy_parser_result": { "status": "matched", "operacao": "lancar_recebimento" },
+    "expected_intent": {
+      "status": "classified",
+      "stage": "deterministic",
+      "operacao": "lancar_recebimento",
+      "categoria": "parcela",
+      "forma": "pix",
+      "valor_centavos": 40500,
+      "requires": ["aluno"],
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-005",
+    "case_name": "Barra - midia ainda pendente",
+    "group_key": "barra",
+    "group_jid": "120363000000002@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "pending",
+    "texto_normalizado": "isso aqui",
+    "legacy_parser_result": { "status": "not_applicable" },
+    "expected_intent": {
+      "status": "media_pending",
+      "stage": "deterministic",
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-006",
+    "case_name": "Recreio - texto tenta trocar unidade",
+    "group_key": "recreio",
+    "group_jid": "120363000000003@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": "campo_grande",
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "texto_normalizado": "sol, parcela campo grande aluno teste pix 390",
+    "legacy_parser_result": { "status": "fallback_wrong", "reason": "text_unit_claim" },
+    "expected_intent": {
+      "status": "classified",
+      "stage": "deterministic",
+      "operacao": "lancar_recebimento",
+      "categoria": "parcela",
+      "forma": "pix",
+      "requires": ["aluno"],
+      "unit_must_remain_from_group": true,
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-007",
+    "case_name": "Campo Grande - empate deterministico vira ambiguidade",
+    "group_key": "campo_grande",
+    "group_jid": "120363000000001@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "resolved",
+    "media_status": "ready",
+    "force_rule_tie": true,
+    "texto_normalizado": "sol, taxa 100 pix",
+    "legacy_parser_result": { "status": "ambiguous" },
+    "expected_intent": {
+      "status": "ambiguous",
+      "stage": "deterministic",
+      "reason": "rule_tie",
+      "writes": false
+    }
+  },
+  {
+    "fixture_id": "CLF-V3-008",
+    "case_name": "Barra - identidade desconhecida vira manual review",
+    "group_key": "barra",
+    "group_jid": "120363000000002@g.us",
+    "unit_source": "group_jid",
+    "unit_text_claim": null,
+    "actor_status": "unknown",
+    "media_status": "ready",
+    "texto_normalizado": "sol, saida seguranca 100 no dinheiro",
+    "legacy_parser_result": { "status": "matched", "warning": "would_need_auth_gate" },
+    "expected_intent": {
+      "status": "manual_review",
+      "stage": "deterministic",
+      "reason": "identity_unknown",
+      "writes": false
+    }
+  }
+]

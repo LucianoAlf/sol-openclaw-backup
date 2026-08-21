@@ -1,0 +1,236 @@
+{
+  "schema_version": "sol_caixa_v3_classifier_local_gate_v1",
+  "generated_at_utc": "2026-08-21T10:28:17.276Z",
+  "gate": "classificador_v3_fase_1_local",
+  "production_changes": false,
+  "database_migrations_applied": false,
+  "whatsapp_deploy": false,
+  "strict_changed": false,
+  "fixture_count": 8,
+  "passed": 8,
+  "failed": 0,
+  "forbidden_effects": {
+    "db_write_calls": 0,
+    "financial_mutations": 0,
+    "whatsapp_outbound_calls": 0,
+    "preview_creations": 0,
+    "approval_creations": 0,
+    "mutation_rpc_calls": 0
+  },
+  "checks": {
+    "deterministic_rules": "covered",
+    "rule_tie": "covered",
+    "regex_as_suggestion_only": "documented",
+    "llm_invalid_output": "schema_blocks_write",
+    "media_pending": "covered",
+    "quote_image": "covered_by_contract",
+    "pdf": "covered_by_contract",
+    "text_unit_divergence": "covered",
+    "unknown_identity": "covered",
+    "no_write": true
+  },
+  "results": [
+    {
+      "fixture_id": "CLF-V3-001",
+      "case_name": "Campo Grande - correcao de forma pix",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "classified",
+        "rule_id": "correcao_forma_pix:v1",
+        "confidence": 1,
+        "evidence": [
+          "pix",
+          "nao foi cartao",
+          "foi pix",
+          "nao cartao"
+        ],
+        "requires": [
+          "movimentacao_id"
+        ],
+        "contract_version": 1,
+        "writes": false,
+        "operacao": "correcao_forma",
+        "forma": "pix"
+      },
+      "legacy_parser_result": {
+        "status": "matched",
+        "operacao": "correcao_forma"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-002",
+      "case_name": "Barra - estorno por mensagem citada",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "classified",
+        "rule_id": "estornar_movimento:v1",
+        "confidence": 1,
+        "evidence": [
+          "estorna",
+          "estornar",
+          "exclui esse lancamento",
+          "apaga esse lancamento"
+        ],
+        "requires": [
+          "movimentacao_id"
+        ],
+        "contract_version": 1,
+        "writes": false,
+        "operacao": "estornar_movimento"
+      },
+      "legacy_parser_result": {
+        "status": "matched",
+        "operacao": "estornar_movimento"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-003",
+      "case_name": "Recreio - saida seguranca dinheiro",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "classified",
+        "rule_id": "saida_seguranca_dinheiro:v1",
+        "confidence": 1,
+        "evidence": [
+          "seguranca",
+          "saida",
+          "pagamento semanal",
+          "pagar seguranca"
+        ],
+        "requires": [],
+        "contract_version": 1,
+        "writes": false,
+        "operacao": "lancar_saida",
+        "categoria": "seguranca",
+        "forma": "dinheiro",
+        "valor_centavos": 10000
+      },
+      "legacy_parser_result": {
+        "status": "matched_after_hotfix",
+        "operacao": "lancar_saida"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-004",
+      "case_name": "Campo Grande - entrada parcela pix",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "classified",
+        "rule_id": "entrada_parcela_pix:v1",
+        "confidence": 0.95,
+        "evidence": [
+          "parcela",
+          "pix"
+        ],
+        "requires": [
+          "aluno"
+        ],
+        "contract_version": 1,
+        "writes": false,
+        "operacao": "lancar_recebimento",
+        "categoria": "parcela",
+        "forma": "pix",
+        "valor_centavos": 40500
+      },
+      "legacy_parser_result": {
+        "status": "matched",
+        "operacao": "lancar_recebimento"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-005",
+      "case_name": "Barra - midia ainda pendente",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "media_pending",
+        "contract_version": 1,
+        "writes": false
+      },
+      "legacy_parser_result": {
+        "status": "not_applicable"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-006",
+      "case_name": "Recreio - texto tenta trocar unidade",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "classified",
+        "rule_id": "entrada_parcela_pix:v1",
+        "confidence": 0.95,
+        "evidence": [
+          "parcela",
+          "pix"
+        ],
+        "requires": [
+          "aluno"
+        ],
+        "contract_version": 1,
+        "writes": false,
+        "operacao": "lancar_recebimento",
+        "categoria": "parcela",
+        "forma": "pix",
+        "valor_centavos": 39000,
+        "unit_source": "group_jid",
+        "ignored_text_unit_claim": "campo_grande"
+      },
+      "legacy_parser_result": {
+        "status": "fallback_wrong",
+        "reason": "text_unit_claim"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-007",
+      "case_name": "Campo Grande - empate deterministico vira ambiguidade",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "ambiguous",
+        "reason": "rule_tie",
+        "contract_version": 1,
+        "writes": false
+      },
+      "legacy_parser_result": {
+        "status": "ambiguous"
+      },
+      "errors": []
+    },
+    {
+      "fixture_id": "CLF-V3-008",
+      "case_name": "Barra - identidade desconhecida vira manual review",
+      "status": "pass",
+      "actual_intent": {
+        "ok": true,
+        "stage": "deterministic",
+        "status": "manual_review",
+        "reason": "identity_unknown",
+        "contract_version": 1,
+        "writes": false
+      },
+      "legacy_parser_result": {
+        "status": "matched",
+        "warning": "would_need_auth_gate"
+      },
+      "errors": []
+    }
+  ]
+}

@@ -45,6 +45,14 @@ contrato em PostgreSQL efêmero e falham fechados quando `autorizado` está
 ausente ou falso. Isso ainda não substitui executar os **helpers oficiais** em
 uma branch/controlado Supabase.
 
+## Fase 4 — shadow no bridge
+
+`runtime/classificador-v3-shadow.cjs` é um espelho local das quatro regras
+determinísticas iniciais. Ele fica desligado por padrão e, quando ativado,
+apenas registra intenção + resultado do parser legado em hashes locais. Não há
+mensagem WhatsApp, preview, approval, RPC financeira ou mudança de autoridade.
+O contrato e a ativação estão em `phase4-bridge-shadow-gate.md`.
+
 ## Rollout
 
 1. Shadow: classificador novo observa, parser antigo continua autoridade.

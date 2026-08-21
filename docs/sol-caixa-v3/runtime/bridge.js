@@ -656,6 +656,19 @@ function _caixaLog(o) {
   try { appendFileSync(CAIXA_LOG, JSON.stringify(Object.assign({ ts: new Date().toISOString() }, o)) + '\n'); } catch (e) {}
 }
 let _caixaHandler = null;
+const SOL_CAIXA_CLASSIFICADOR_V3_SHADOW = process.env.SOL_CAIXA_CLASSIFICADOR_V3_SHADOW === '1';
+let _classificadorV3Shadow = null;
+async function classificadorV3Shadow() {
+  if (!SOL_CAIXA_CLASSIFICADOR_V3_SHADOW) return null;
+  if (_classificadorV3Shadow) return _classificadorV3Shadow;
+  try {
+    _classificadorV3Shadow = await import('file:///home/sol/.hermes/profiles/sol/caixa-ingestao/classificador-v3-shadow.cjs');
+  } catch (e) {
+    _caixaLog({ step: 'classificador_v3_shadow_load_erro', msg: e.message });
+    _classificadorV3Shadow = null;
+  }
+  return _classificadorV3Shadow;
+}
 async function financeHandler() {
   if (!SOL_CAIXA_LIVE) return null;
   if (_caixaHandler) return _caixaHandler;
@@ -1021,8 +1034,19 @@ async function caixaAbf() {
             const _fh = await financeHandler();
             let _tratouCaixa = true;
             if (_fh) {
+              const _grupoCaixa = financeGroupMap()[chatId];
+              const _shadow = await classificadorV3Shadow();
+              let _shadowClassificacao = null;
+              if (_shadow) {
+                try { _shadowClassificacao = _shadow.classificar({ event, grupo: _grupoCaixa }); }
+                catch (e) { _caixaLog({ step: 'classificador_v3_shadow_erro', msg: e.message }); }
+              }
               const _r = await _fh.handle(event);
               _caixaLog({ step: 'result', r: _r });
+              if (_shadow && _shadowClassificacao) {
+                try { _shadow.registrar({ log: _caixaLog, event, grupo: _grupoCaixa, classificacao: _shadowClassificacao, legado: _r }); }
+                catch (e) { _caixaLog({ step: 'classificador_v3_shadow_erro', msg: e.message }); }
+              }
               // S2: se nao era assunto de caixa, a mensagem segue pro engajamento (LLM).
               _tratouCaixa = !(_r && (_r.acao === 'nada' || _r.acao === 'ignorado_fora_grupo'));
             }

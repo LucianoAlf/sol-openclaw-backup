@@ -19,6 +19,15 @@ Esta fase e apenas contrato local/draft:
 - `sol-caixa-v3-classificador-fixtures.json`: casos locais dos 3 grupos.
 - `gate-classificador-v3-local-runner.mjs`: runner local sem banco/WhatsApp.
 
+## Reprodutibilidade
+
+O runner nao altera arquivos versionados. Por padrao ele grava o report em um
+diretorio temporario; para escolher o destino, use `--out /caminho/report.json`.
+
+O gate atual valida apenas o contrato local. A facade SQL, os helpers canonicos
+de grupo/unidade/ator e a comparacao com o parser legado real ainda exigem
+ambiente controlado antes de qualquer migration.
+
 ## Rollout
 
 1. Shadow: classificador novo observa, parser antigo continua autoridade.

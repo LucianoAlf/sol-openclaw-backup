@@ -43,13 +43,15 @@
         "unknown"
       ]
     },
-    "forma": {
-      "enum": ["pix", "dinheiro", "cartao_debito", "cartao_credito", "unknown"]
-    },
+    "forma": { "enum": ["pix", "dinheiro", "cartao", "unknown"] },
+    "cartao_modalidade": { "enum": ["debito", "credito", null] },
+    "valor_centavos": { "type": "integer", "minimum": 1 },
     "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
     "evidence": { "type": "array", "items": { "type": "string" } },
     "requires": { "type": "array", "items": { "type": "string" } },
     "reason": { "type": "string" },
+    "unit_source": { "const": "group_jid" },
+    "ignored_text_unit_claim": { "type": "string" },
     "contract_version": { "type": "integer", "minimum": 1 },
     "writes": { "const": false }
   }

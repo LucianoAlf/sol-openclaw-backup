@@ -60,6 +60,8 @@ for each row execute function public.sol_classificacao_regras_bloquear_delete();
 alter table public.sol_classificacao_regras enable row level security;
 
 revoke all on public.sol_classificacao_regras from public, anon, authenticated;
-grant select on public.sol_classificacao_regras to sol_acesso_restrito;
+-- Runtime nao le a tabela diretamente. A unica superficie de leitura e a
+-- facade SECURITY DEFINER, depois de validar o contexto canonico do evento.
+revoke all on public.sol_classificacao_regras from sol_acesso_restrito;
 
 commit;

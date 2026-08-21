@@ -265,7 +265,7 @@ function montarPreview({ unidadeNome, valor, forma, categoria, aluno, competenci
     if (responsavelFinanceiro) bAluno.push(`Resp. financeiro: ${tituloNome(responsavelFinanceiro)}`);
     else if (pagadorNome && alunoViaPagador === 'comprovante' && mesmaPessoa(pagadorNome, aluno)) {
       bAluno.push(`Resp. financeiro: ${tituloNome(pagadorNome)} _(própria aluna no comprovante)_`);
-    }
+    } else bAluno.push('Resp. financeiro: não encontrado no cadastro');
     if (pagadorNome && alunoViaPagador === 'familia') {
       bAluno.push(`Pagou: ${tituloNome(pagadorNome)} _(deduzi pelo sobrenome — confere?)_`);
     } else if (pagadorNome && alunoViaPagador === 'responsavel') {
@@ -1175,6 +1175,24 @@ function _alunoRotulado(body) {
   return _limparAlunoRotulado(m[1]);
 }
 
+// Em uma pendência única, a equipe costuma responder só com o nome em uma
+// linha e "Parcela 08/2026" na outra. Isso é dado humano forte; não deve ser
+// descartado só por faltar a etiqueta "aluno:". Ainda passa pela canônica.
+function _nomeHumanoTardio(body) {
+  const rotulado = _alunoRotulado(body);
+  if (rotulado) return rotulado;
+  let t = bodyLimpo(body)
+    .replace(/^sol\s*[,!?:-]?\s*/i, ' ')
+    .replace(/\b(parcela|mensalidade|compet[eê]ncia|pagamento|comprovante|recibo|pix|dinheiro|cart[ãa]o|transfer[êe]ncia|unidade|campo\s+grande|recreio|barra)\b/gi, ' ')
+    .replace(/\b\d{1,2}\s*\/\s*\d{4}\b/g, ' ')
+    .replace(/r\$\s*[\d.,]+/gi, ' ')
+    .replace(/[^\p{L}\s.-]/gu, ' ')
+    .replace(/\s+/g, ' ').trim();
+  const toks = t.split(' ').filter(Boolean);
+  if (toks.length < 2 || toks.length > 6) return null;
+  return _limparAlunoRotulado(toks.join(' '));
+}
+
 function _cursoRotulado(body) {
   const t = bodyLimpo(body);
   if (!t) return null;
@@ -1575,6 +1593,28 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
     }
   }
 
+  // Toda remontagem precisa produzir o par visual + preview V3. Sem isso o
+  // WhatsApp mostrava "Posso lançar?" mas o guard financeiro recusava o Pode.
+  async function vincularPreviewRemontadoV3({ event, grupo, pendencia, previewId, texto, result }) {
+    let v3 = null;
+    try {
+      v3 = await registrarPreviewPublicoV3({ event, grupo, previewId, texto, pendencia, result });
+    } catch (e) {
+      log({ acao: 'v3_preview_remontado_erro', chatId: event.chatId, erro: String(e && e.message) });
+    }
+    if (v3 && v3.preview_id) {
+      pendencia.v3PreviewId = v3.preview_id;
+      pendencia.v3PreviewHash = v3.preview_hash || null;
+      return true;
+    }
+    if (!v3LedgerAtivo) return true;
+    const atuais = limparVelhos(event.chatId, Date.now());
+    pendentes.set(event.chatId, atuais.filter((p) => p !== pendencia));
+    await sendFn(event.chatId, '⚠️ Atualizei os dados, mas ainda não consegui preparar o preview seguro para lançamento. Não responda *pode* neste preview; tenta de novo em instantes.');
+    log({ acao: 'v3_preview_remontado_bloqueado', chatId: event.chatId, motivo: 'preview_v3_nao_persistido' });
+    return false;
+  }
+
   async function registrarApprovalPublicoV3({ event, alvo, decision = 'approved' }) {
     if (!v3LedgerAtivo || !alvo || !alvo.v3PreviewId) return null;
     const approvalEventHash = sha256(event.messageId);
@@ -1961,13 +2001,24 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       // O fluxo antigo recusava a midia antes de chegar aqui justamente no caso
       // de texto vazio/timeout, que e' quando a visao e' mais necessaria.
       let alunoVis = null;
+      let pagadorVis = null;
       let visao = null;
       if (media && (!valor || ocrText.trim().length < 20)) {
         try {
           log({ acao: 'fallback_vision_attempt', chatId, motivo: ocrText.trim().length < 20 ? (ocrMeta.status || 'ocr_curto') : 'valor_ausente' });
           visao = await visaoFn(media);
           log({ acao: 'fallback_vision_result', ok: !!(visao && visao.valor), chatId });
-          if (visao) { if (!valor && visao.valor) valor = visao.valor; if (!forma && visao.forma) forma = visao.forma; if (visao.aluno) alunoVis = visao.aluno; }
+          if (visao) {
+            if (!valor && visao.valor) valor = visao.valor;
+            if (!forma && visao.forma) forma = visao.forma;
+            if (visao.pagador_nome) pagadorVis = visao.pagador_nome;
+            // Quando a visão não distinguiu aluno de pagador, trata esse nome
+            // primeiro como pagador. A canônica decide se é a própria aluna.
+            if (visao.aluno) {
+              alunoVis = visao.aluno;
+              if (!pagadorVis) pagadorVis = visao.aluno;
+            }
+          }
         } catch (e) {
           log({ acao: 'fallback_vision_error', chatId, error_code: e && e.code || null, error_message: e && e.message || null });
         }
@@ -2027,7 +2078,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       if (!nomePlausivel(aluno)) aluno = null;              // "image received" nao e' aluno
       aluno = _alunoRotulado(legendaEfetiva) || aluno || _alunoFromCaption(legendaEfetiva) || alunoVis;
       if (!nomePlausivel(aluno)) aluno = null;
-      let alunoViaPagador = null, pagadorNome = (visao && visao.pagador_nome) || null, candidatosAluno = null;
+      let alunoViaPagador = null, pagadorNome = pagadorVis || (visao && visao.pagador_nome) || null, candidatosAluno = null;
       // sem sinal de forma: NAO chuta pix -- pergunta no preview.
       const formaIncerta = !forma;
       // Camada 4: casa com a parcela REAL do aluno (read-only) -- enriquece o preview
@@ -2222,6 +2273,14 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
         pendencia.v3PreviewId = v3.preview_id;
         pendencia.v3PreviewHash = v3.preview_hash || null;
       }
+      // A RPC financeira exige o vínculo V3. Não pode existir um preview que
+      // convida o "pode" se o registro V3 não foi persistido: era exatamente
+      // o caso do preview correto da Beatriz que morria no último passo.
+      if (v3LedgerAtivo && (!pendencia.v3PreviewId || !pendencia.v3PreviewHash)) {
+        await sendFn(chatId, '⚠️ Preparei a conferência, mas o preview seguro não foi registrado. Não responda *pode* neste preview; vou pedir um novo comprovante se não normalizar em instantes.');
+        log({ acao: 'preview_bloqueado_sem_v3', chatId, motivo: 'preview_v3_nao_persistido' });
+        return { acao: 'preview_enviado_sem_v3', previewId };
+      }
       arr.push(pendencia);
       pendentes.set(chatId, arr);
       log({ acao: 'preview_enviado', chatId, previewId, valor: valor || null });
@@ -2272,6 +2331,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
             });
             if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
             alvoP.previewId = await sendFn(chatId, texto);
+            if (!await vincularPreviewRemontadoV3({
+              event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+              result: { acao: 'preview_forma_corrigida', forma: alvoP.forma },
+            })) return { acao: 'preview_forma_corrigida_sem_v3', forma: alvoP.forma };
             log({ acao: 'preview_forma_corrigida', chatId, forma: alvoP.forma });
             return { acao: 'preview_forma_corrigida', forma: alvoP.forma };
           }
@@ -2393,7 +2456,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
       // contaminado por legenda ("restante do passaporte da aluna X"), e o humano
       // respondeu depois "Aluno: X" / "A aluna e X". Ainda exige "pode" para lancar.
       if (!event.hasMedia && txt && !casarPode(txt).pode) {
-        const nomeTardio = _alunoRotulado(txt);
+        const nomeTardio = _nomeHumanoTardio(txt);
         const semAluno = arrP.filter((x) => (!x.aluno || _alunoSuspeito(x.aluno)) && (event.quotedMessageId || (agora - x.ts) <= 5 * 60 * 1000));
         let alvoP = null;
         if (event.quotedMessageId) alvoP = semAluno.find((p) => p.previewId === event.quotedMessageId) || null;
@@ -2500,6 +2563,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           });
           if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
           alvoP.previewId = await sendFn(chatId, texto);
+          if (!await vincularPreviewRemontadoV3({
+            event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+            result: { acao: 'preview_aluno_corrigido', aluno: alvoP.aluno, competencia: alvoP.competencia },
+          })) return { acao: 'preview_aluno_corrigido_sem_v3', aluno: alvoP.aluno };
           log({ acao: 'preview_aluno_corrigido', chatId, aluno: alvoP.aluno });
           return { acao: 'preview_aluno_corrigido', aluno: alvoP.aluno };
         }
@@ -2576,6 +2643,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           });
           if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
           alvoP.previewId = await sendFn(chatId, texto);
+          if (!await vincularPreviewRemontadoV3({
+            event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+            result: { acao: 'preview_categoria_passaporte_corrigida', categoria: 'passaporte' },
+          })) return { acao: 'preview_categoria_passaporte_corrigida_sem_v3' };
           log({ acao: 'preview_categoria_passaporte_corrigida', chatId });
           return { acao: 'preview_categoria_passaporte_corrigida' };
         }
@@ -2652,6 +2723,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           });
           if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
           alvoP.previewId = await sendFn(chatId, texto);
+          if (!await vincularPreviewRemontadoV3({
+            event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+            result: { acao: 'preview_categoria_parcela_corrigida', categoria: 'parcela', competencia },
+          })) return { acao: 'preview_categoria_parcela_corrigida_sem_v3' };
           log({ acao: 'preview_categoria_parcela_corrigida', chatId });
           return { acao: 'preview_categoria_parcela_corrigida' };
         }
@@ -2679,6 +2754,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           });
           if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
           alvoP.previewId = await sendFn(chatId, texto);
+          if (!await vincularPreviewRemontadoV3({
+            event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+            result: { acao: 'preview_lojinha_corrigido', categoria: 'lojinha', item: alvoP.itemLojinha },
+          })) return { acao: 'preview_lojinha_corrigido_sem_v3', item: alvoP.itemLojinha };
           log({ acao: 'preview_lojinha_corrigido', chatId, item: alvoP.itemLojinha });
           return { acao: 'preview_lojinha_corrigido', item: alvoP.itemLojinha };
         }
@@ -2713,6 +2792,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
               });
               if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
               alvoP.previewId = await sendFn(chatId, texto);
+              if (!await vincularPreviewRemontadoV3({
+                event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+                result: { acao: 'preview_adicional_corrigido', adicional: adicional.valor, total: valorNovo },
+              })) return { acao: 'preview_adicional_corrigido_sem_v3', adicional: adicional.valor, total: valorNovo };
               log({ acao: 'preview_adicional_corrigido', chatId, adicional: adicional.valor, total: valorNovo });
               return { acao: 'preview_adicional_corrigido', adicional: adicional.valor, total: valorNovo };
             }
@@ -2738,6 +2821,10 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
             });
             if (dryRun) texto += '\n\n_(modo teste — nada será gravado no caixa)_';
             alvoP.previewId = await sendFn(chatId, texto);
+            if (!await vincularPreviewRemontadoV3({
+              event, grupo: grp, pendencia: alvoP, previewId: alvoP.previewId, texto,
+              result: { acao: 'preview_composto_pendente', partes: partes.length, total: alvoP.valor },
+            })) return { acao: 'preview_composto_pendente_sem_v3', partes: partes.length };
             log({ acao: 'preview_composto_pendente', chatId, partes: partes.length, total: alvoP.valor });
             return { acao: 'preview_composto_pendente', partes: partes.length };
           }

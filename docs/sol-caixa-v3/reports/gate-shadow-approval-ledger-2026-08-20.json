@@ -1,0 +1,49 @@
+{
+  "schema_version": "sol_caixa_gate_shadow_approval_ledger_report_v1",
+  "generated_at_utc": "2026-08-20T22:12:35Z",
+  "mode": "shadow_private_approval_ledger_from_real_pode",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": true,
+  "financial_mutation": false,
+  "whatsapp_outbound": false,
+  "service_role_used_for_gate": false,
+  "restart_performed": false,
+  "migration_applied": "sol_caixa_v3_shadow_approval_rpc_20260820",
+  "rpc_created": "public.sol_caixa_shadow_registrar_approval(jsonb)",
+  "real_approval_source": {
+    "source": "/home/sol/.hermes/profiles/sol/logs/whatsapp-group-observe.jsonl",
+    "observed_at_utc": "2026-08-20T21:46:39.493Z",
+    "message_id_sha256": "c497cb2cfbe2a8008bab25b7c35cafb18677a0d1ad3a42600f356938311ed511",
+    "actor_id_sha256": "4eff54abead1557bba9770cdb31f4f71ac125fcab9e5a7604d2d30cf21700647",
+    "approval_text_sha256": "de9d2487df4a9b37935a7ad23ad9449f01714d38cbd70439b403df20c4461a3b"
+  },
+  "linked_shadow_preview": {
+    "preview_id": "3d5ad7c1-6d5a-4bc1-bbf4-b647da71bf28",
+    "source_gate": "gate-shadow-inline-ledger-2026-08-20.json",
+    "case": "Mayra real event 2026-08-20 21:45 UTC, private shadow preview only"
+  },
+  "validation": {
+    "rollback_call_ok": true,
+    "committed_call_ok": true,
+    "duplicate_call_idempotent": true,
+    "committed_approval_id": "746ad1f1-77b7-44e5-a37d-261ddb6b33a4"
+  },
+  "invariant_checks": {
+    "wrote_only_shadow_approval_ledger": true,
+    "no_caixa_movimentacoes_write": true,
+    "no_whatsapp_message_sent": true,
+    "no_public_preview": true,
+    "no_restart": true
+  },
+  "blocked_until_next_gate": {
+    "public_preview": true,
+    "financial_write": true,
+    "live_write_allowlist_activation": true,
+    "lid_to_canonical_identity_full_resolution": true
+  },
+  "warnings": [
+    "Approval was linked to a private shadow preview, not to a public WhatsApp preview.",
+    "This proves approval-ledger mechanics only; it does not authorize financial write."
+  ]
+}

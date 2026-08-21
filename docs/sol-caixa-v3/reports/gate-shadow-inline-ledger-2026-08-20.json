@@ -1,0 +1,110 @@
+{
+  "schema_version": "sol_caixa_gate_shadow_inline_ledger_report_v1",
+  "generated_at_utc": "2026-08-20T21:56:45.447Z",
+  "mode": "shadow_inline_private_ledger_controlled",
+  "runner_version": "sol-caixa-v3-shadow-inline-ledger@2026-08-20.1",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": true,
+  "financial_mutation": false,
+  "whatsapp_touch": false,
+  "whatsapp_outbound": false,
+  "service_role_used": false,
+  "restart_performed": false,
+  "source_report": {
+    "path": "outputs/sol-caixa-v3-harness/reports/gate-shadow-real-controlled-2026-08-20.json",
+    "sha256": "ba956edebd8046e54c3127223ee69e2c15399269cba3b4f5eb0137422e4e04bb"
+  },
+  "summary": {
+    "candidates_selected": 3,
+    "shadow_events_registered": 3,
+    "gate_status": "pass_shadow_private_ledger_written"
+  },
+  "invariant_checks": {
+    "no_service_role_used": true,
+    "no_financial_mutations": true,
+    "no_whatsapp_outbound": true,
+    "no_restart": true,
+    "wrote_only_shadow_ledger": true
+  },
+  "side_effect_counters": {
+    "shadow_ledger_write_calls": 3,
+    "db_write_calls": 3,
+    "financial_mutations": 0,
+    "whatsapp_outbound_calls": 0,
+    "restarts": 0
+  },
+  "sql_results": [
+    {
+      "current_role": "sol_acesso_restrito",
+      "current_user": "sol_acesso_restrito",
+      "session_user": "sol_acesso_restrito"
+    },
+    {
+      "ok": true,
+      "event_id": "605a2c88-d9cf-4f9f-8165-d25985946f16",
+      "preview_id": "92ac3ef2-a2e8-4221-bb53-2371b0469857"
+    },
+    {
+      "ok": true,
+      "event_id": "258d0263-e620-494d-a593-98eedcf7e6fb",
+      "preview_id": "3593dba7-14d1-48ba-b0bf-d2aed958b0bd"
+    },
+    {
+      "ok": true,
+      "event_id": "ae62942f-acf3-4daa-a600-6e89f395402c",
+      "preview_id": "3d5ad7c1-6d5a-4bc1-bbf4-b647da71bf28"
+    },
+    {
+      "shadow_eventos_rows": 0,
+      "shadow_previews_rows": 0,
+      "finance_movements_touched": false
+    }
+  ],
+  "registered_cases": [
+    {
+      "event_id_sha256": "15ccc6bed77c8a222ddcf61f267223c433e98996c7c6f2edc6245c040f0e4e37",
+      "observed_at_utc": "2026-08-20T21:03:18.444Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 35000,
+      "payment_method": "dinheiro",
+      "live_identity_evidence": true
+    },
+    {
+      "event_id_sha256": "2eb2a46b47b961cf45b6e5588e654f37f81fa5aa6d5305b67fefdcc01672d5e4",
+      "observed_at_utc": "2026-08-20T21:08:53.917Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 5300,
+      "payment_method": "unknown",
+      "live_identity_evidence": true
+    },
+    {
+      "event_id_sha256": "23cca19aaf9c403be04ab99676e818310abdb8e5f07587fc4f64f1613b800621",
+      "observed_at_utc": "2026-08-20T21:45:15.771Z",
+      "chat_id_md5": "496d792f013f8318c09188dfc749771b",
+      "unidade_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 37700,
+      "payment_method": "pix",
+      "live_identity_evidence": true
+    }
+  ],
+  "warnings": [
+    "This writes only to Sol Caixa V3 private shadow ledger tables.",
+    "This does not send WhatsApp messages and does not call financial mutation RPCs.",
+    "Public preview and write remain blocked."
+  ],
+  "blocked_until_next_gate": {
+    "public_preview": true,
+    "financial_write": true,
+    "live_worker_continuous_mode": true,
+    "approval_ledger_from_real_pode": true
+  }
+}

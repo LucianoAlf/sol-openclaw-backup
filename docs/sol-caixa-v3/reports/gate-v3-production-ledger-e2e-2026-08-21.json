@@ -1,0 +1,77 @@
+{
+  "gate": "v3-production-ledger-e2e",
+  "date_utc": "2026-08-21",
+  "status": "passed",
+  "production_changes": [
+    "caixa-financeiro.cjs now records public previews into the V3 ledger when SOL_CAIXA_V3_LEDGER_MODE=production",
+    "pode/approval now records an approval ledger event before calling financial write RPCs",
+    "V3 ledger is enabled in /home/sol/.openclaw/gateway.systemd.env with SOL_CAIXA_V3_LEDGER_MODE=production",
+    "SOL_CAIXA_V3_LEDGER_STRICT=0 keeps the legacy launch path from breaking if ledger write has a transient failure",
+    "sol_caixa_shadow_registrar_approval execute was revoked from anon/authenticated and retained for sol_acesso_restrito/service_role"
+  ],
+  "covered_groups": [
+    {
+      "name": "Campo Grande",
+      "unit_id": "2ec861f6-023f-4d7b-9927-3960ad8c2a92"
+    },
+    {
+      "name": "Barra",
+      "unit_id": "368d47f5-2d88-4475-bc14-ba084a9a348e"
+    },
+    {
+      "name": "Recreio",
+      "unit_id": "95553e96-971b-4590-a6eb-0201d013c14d"
+    }
+  ],
+  "e2e_scenarios": [
+    "image receipt preview",
+    "PDF/document receipt preview",
+    "pode approval and launch",
+    "payment method correction",
+    "movement value correction",
+    "movement estorno/excluir as audited inverse movement",
+    "operational saída Segurança",
+    "direct closing request with demonstrativo",
+    "negative closing cancellation",
+    "closing approval"
+  ],
+  "tests": [
+    {
+      "name": "v3-ledger-production.test.cjs",
+      "result": "3/3 passed"
+    },
+    {
+      "name": "v3-e2e-tres-grupos.test.cjs",
+      "result": "3/3 group matrices passed using SOL_CAIXA_FINANCE_GROUPS on LAHQ"
+    },
+    {
+      "name": "caixa-ingestao *.test.cjs",
+      "result": "30/30 files passed"
+    },
+    {
+      "name": "ledger preview + approval rollback smoke",
+      "result": "preview_ok=true, approval_ok=true, rollback executed"
+    }
+  ],
+  "runtime": {
+    "gateway": "restarted",
+    "bridge_health": "connected",
+    "bridge_port": 3000,
+    "sol_group_ingest": "running",
+    "shadow_worker": "running"
+  },
+  "hashes": {
+    "caixa-financeiro.cjs": "880ce68c092f3daa6b217ff213675779d974eb1f029d4ef56c7739346486f740",
+    "v3-ledger-production.test.cjs": "7bc0a0a02db7e2b7d8b5bc16e5b04ca473e2d7e3e87c21239f43a838ba591b2e",
+    "v3-e2e-tres-grupos.test.cjs": "2e99811502e710791ebadfd57a98871c79bc35ad0c439a7ae84466945de2ba5b",
+    "gateway.systemd.env": "6628cdc50d966c7d7b4ba7a34d2a39482b2508f0f57e74dea5658da173fb8bc4"
+  },
+  "backups": [
+    "caixa-financeiro.cjs.bak-20260821T002709Z-before-v3-ledger-production",
+    "gateway.systemd.env.bak-20260821T002709Z-before-v3-ledger-production"
+  ],
+  "remaining_risk": [
+    "SOL_CAIXA_V3_LEDGER_STRICT is intentionally 0 for first production canary; ledger failures are logged but do not block legacy launch path yet",
+    "real WhatsApp PDF/correction/estorno cases should still be observed during business hours"
+  ]
+}

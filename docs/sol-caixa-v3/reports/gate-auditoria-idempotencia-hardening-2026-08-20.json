@@ -1,0 +1,80 @@
+{
+  "schema_version": "sol_caixa_gate_auditoria_idempotencia_hardening_v1",
+  "generated_at_utc": "2026-08-20T23:52:31Z",
+  "scope": "Hardening pontual do bloco de correcao/estorno da Sol Caixa; nao alterou RLS geral do projeto nem tabelas antigas fora do dominio auditado.",
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": true,
+  "financial_mutation": false,
+  "migration_name": "sol_caixa_hardening_auditoria_idempotencia_20260820",
+  "changes_applied": [
+    "Revogado acesso direto de public, anon, authenticated, sol_acesso_restrito e sol_caixa_readonly na tabela public.sol_caixa_operacoes_auditoria_v1.",
+    "Revogado acesso direto de fabio_agent, lia_acesso_restrito e mila_acesso_restrito na tabela public.sol_caixa_operacoes_auditoria_v1.",
+    "RLS habilitado em public.sol_caixa_operacoes_auditoria_v1, sem policy publica.",
+    "Indice unico parcial garantido em idempotency_key para bloquear duplicidade quando a chave existir.",
+    "Revogado EXECUTE publico/anon/authenticated dos helpers e preflights novos de Caixa.",
+    "Grants explicitos mantidos para sol_acesso_restrito/sol_caixa_readonly somente onde necessario."
+  ],
+  "validated_state": {
+    "auditoria_rls_enabled": true,
+    "auditoria_force_rls": false,
+    "auditoria_direct_table_access": {
+      "anon": {
+        "select": false,
+        "insert": false,
+        "update": false,
+        "delete": false
+      },
+      "authenticated": {
+        "select": false,
+        "insert": false,
+        "update": false,
+        "delete": false
+      },
+      "sol_acesso_restrito": {
+        "select": false,
+        "insert": false,
+        "update": false,
+        "delete": false
+      },
+      "sol_caixa_readonly": {
+        "select": false,
+        "insert": false,
+        "update": false,
+        "delete": false
+      }
+    },
+    "auditoria_remaining_direct_grants": [
+      "postgres",
+      "service_role"
+    ],
+    "idempotency_index": "sol_caixa_operacoes_auditoria_v1_idem_uniq on idempotency_key where idempotency_key is not null",
+    "public_helper_execute": {
+      "sol_caixa_grupo_operacao_ok": false,
+      "sol_caixa_ator_operacao_ok": false,
+      "sol_caixa_readonly_preflight_v1": false,
+      "sol_caixa_readonly_preflight_v2": false,
+      "sol_caixa_readonly_preflight_v3": false,
+      "sol_caixa_corrigir_movimento_v1": false,
+      "sol_caixa_estornar_movimento_v1": false
+    }
+  },
+  "smoke_tests": {
+    "idempotency_duplicate_insert": "blocked_by_unique_violation",
+    "smoke_rows_left": 0,
+    "financial_mutation": false,
+    "whatsapp_outbound": false,
+    "restart_performed": false
+  },
+  "deliberately_not_changed": [
+    "Nao habilitei RLS em massa nas 15 tabelas antigas apontadas pelo advisory.",
+    "Nao mexi nas permissoes gerais do projeto fora do recorte Sol Caixa.",
+    "Nao alterei o fluxo vivo da bridge/parser.",
+    "Nao revoguei sol_caixa_recalcular_cofre para uso interno; ela continua tratada como funcao interna chamada por SECURITY DEFINER."
+  ],
+  "remaining_risk": [
+    "Teste de concorrencia real de duas conexoes simultaneas em RPC ainda pode ser aprofundado; o indice unico ja bloqueia duplicidade por idempotency_key.",
+    "PDF real e casos vivos de correcao/estorno ainda precisam ser observados em grupo.",
+    "V3 completa ainda depende de classificador/preview ledger no fluxo principal."
+  ]
+}

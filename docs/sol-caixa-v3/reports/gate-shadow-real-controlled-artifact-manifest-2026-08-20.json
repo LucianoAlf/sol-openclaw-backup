@@ -1,0 +1,87 @@
+{
+  "schema_version": "sol_caixa_gate_shadow_real_controlled_artifact_manifest_v1",
+  "generated_at_utc": "2026-08-20T21:50:11.110Z",
+  "command": "node outputs/sol-caixa-v3-harness/runner/gate-shadow-real-controlled-runner.mjs",
+  "execution_path": "ssh lahq -> Sol VPS logs + lareport-readonly secret -> psql pooler -> SET ROLE sol_caixa_readonly",
+  "no_secret_material_in_artifact": true,
+  "production_touch": true,
+  "database_touch": true,
+  "database_mutation": false,
+  "financial_mutation": false,
+  "whatsapp_touch": false,
+  "whatsapp_outbound": false,
+  "service_role_used": false,
+  "restart_performed": false,
+  "connection": {
+    "path": "ssh lahq -> Sol VPS logs + lareport-readonly secret -> psql pooler -> SET ROLE sol_caixa_readonly",
+    "current_user": "sol_caixa_readonly",
+    "current_role": "sol_caixa_readonly",
+    "session_user": "sol_acesso_restrito",
+    "role_setting": "sol_caixa_readonly",
+    "not_used": [
+      "service_role",
+      "WhatsApp outbound",
+      "mutation RPC",
+      "gateway restart"
+    ]
+  },
+  "summary": {
+    "real_events_evaluated": 30,
+    "resolved_private_shadow_only": 15,
+    "blocked_or_manual_review": 15,
+    "legacy_preview_events_seen": 10,
+    "legacy_financial_writes_seen_near_events": 3,
+    "gate_status": "pass_with_warnings_shadow_real_readonly_retrospective"
+  },
+  "invariant_checks": {
+    "ran_under_sol_caixa_readonly": true,
+    "session_user_is_sol_acesso_restrito": true,
+    "no_service_role_used": true,
+    "no_mutation_rpc_called": true,
+    "no_database_writes": true,
+    "no_financial_mutations_by_runner": true,
+    "no_whatsapp_outbound_by_runner": true,
+    "no_restart": true,
+    "mutating_privileges_denied": true,
+    "direct_select_privileges_denied": true,
+    "explicit_authorization_matrix_present": true,
+    "legacy_any_member_policy_disabled": true
+  },
+  "warnings": [
+    "Retrospective shadow reads already-observed live events; it does not inject, replay or answer WhatsApp.",
+    "Some observed sender IDs are WhatsApp LID identifiers; canonical phone validation still depends on live identity evidence or a future LID-to-canonical mapping.",
+    "This gate does not authorize public preview or write."
+  ],
+  "side_effect_counters": {
+    "db_read_calls": 2,
+    "db_write_calls": 0,
+    "mutation_rpc_calls": 0,
+    "financial_mutations": 0,
+    "whatsapp_outbound_calls": 0,
+    "duplicate_outbound_calls": 0,
+    "restarts": 0,
+    "external_media_calls": 0
+  },
+  "files": [
+    {
+      "path": "runner/gate-shadow-real-controlled-runner.mjs",
+      "sha256": "d02b2dc679ec1652f521abdc1601edb4eb3e6b092c4f34575472d98b26dc7594",
+      "bytes": 14717
+    },
+    {
+      "path": "reports/gate-shadow-real-controlled-2026-08-20.json",
+      "sha256": "ba956edebd8046e54c3127223ee69e2c15399269cba3b4f5eb0137422e4e04bb",
+      "bytes": 56395
+    },
+    {
+      "path": "reports/gate-shadow-real-controlled-run-2026-08-20.stdout.txt",
+      "sha256": "d27132ba40250f0984d72f82315a52073df349c5f86dda23aa6f8c69932f619d",
+      "bytes": 320
+    },
+    {
+      "path": "reports/gate-shadow-real-controlled-run-2026-08-20.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ]
+}

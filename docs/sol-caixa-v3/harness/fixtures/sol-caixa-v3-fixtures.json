@@ -1,0 +1,1260 @@
+[
+  {
+    "fixture_id": "SCX-FX-001",
+    "case_name": "Laura Recreio passaporte",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-recreio-financeiro@g.us", "unit": "Recreio", "active_financial_route": false }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-recreio-01", "unit": "Recreio", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000001",
+        "group_jid": "g-recreio-financeiro@g.us",
+        "message_id": "msg-fx001-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-recreio-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "pdf",
+        "text_sanitized": "Sol, passaporte promocional Laura no Pix R$405",
+        "has_media": true,
+        "media_kind": "pdf"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "manual_review",
+      "approval_status": "none",
+      "resolver_status": "manual_review",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": 40500,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "wrong_category",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-002",
+    "case_name": "Perola Campo Grande parcela mais passaporte",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000002",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx002-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, Pix parcela 08/2026 R$387 + diferenca passaporte R$280 aluna P.",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "composto",
+      "amount_cents": 66700,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "matched_after_hotfix",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-003",
+    "case_name": "Vinicius adicional de banda",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000003",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx003-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, adicional de banda do Vinicius R$150 no Pix",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "banda",
+      "amount_cents": 15000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-004",
+    "case_name": "Arthur Barra corda lojinha",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000004",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx004-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "Sol, venda de corda de violao R$60 dinheiro",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "lojinha",
+      "amount_cents": 6000,
+      "payment_method": "dinheiro"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "fallback_wrong",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-005",
+    "case_name": "Pedro duas mensalidades",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000005",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx005-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, Pedro duas mensalidades no Pix total R$760",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "composto",
+      "amount_cents": 76000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-006",
+    "case_name": "Davi fonte indisponivel",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000006",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx006-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, recebimento Davi R$390 Pix, fonte canonica indisponivel",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "blocked",
+      "approval_status": "none",
+      "resolver_status": "blocked",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "fallback_wrong",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-007",
+    "case_name": "Seguranca saida operacional",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["saida_operacional"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000007",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx007-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "Sol, pagamento semanal seguranca R$100 no dinheiro",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "saida",
+      "category": "saida_operacional",
+      "amount_cents": 10000,
+      "payment_method": "dinheiro"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "technical_leak",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-008",
+    "case_name": "Correcao forma Pix versus cartao debito",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["corrigir_forma"] }
+      ],
+      "initial_previews": [
+        { "preview_id": "preview-fx008-001", "group_jid": "g-cg-financeiro@g.us", "category": "parcela", "payment_method": "cartao_debito", "amount_cents": 38700 }
+      ],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000008",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx008-001",
+        "quoted_message_id": "preview-fx008-001",
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "quoted_reply",
+        "text_sanitized": "Sol, foi Pix",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "corrigir_forma",
+      "category": "parcela",
+      "amount_cents": 38700,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-009",
+    "case_name": "Parcela Recreio nao pode virar lojinha",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-recreio-financeiro@g.us", "unit": "Recreio", "active_financial_route": false }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-recreio-01", "unit": "Recreio", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000009",
+        "group_jid": "g-recreio-financeiro@g.us",
+        "message_id": "msg-fx009-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-recreio-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, parcela de setembro no Pix R$390",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "manual_review",
+      "approval_status": "none",
+      "resolver_status": "manual_review",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "wrong_category",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-010",
+    "case_name": "Fechamento direto",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["fechar"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000010",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx010-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "Sol, pode fechar o caixa",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "fechar",
+      "category": "fechamento",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "technical_leak",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-011",
+    "case_name": "Pode Sol com preview unico",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [
+        { "preview_id": "preview-fx011-001", "group_jid": "g-barra-financeiro@g.us", "category": "parcela", "payment_method": "pix", "amount_cents": 39000 }
+      ],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000011",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx011-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "pode Sol",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "approved",
+      "approval_status": "accepted",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "matched_after_hotfix",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-012",
+    "case_name": "Mensagem sem mencao em standby",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000012",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx012-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": false,
+        "conversation_window": "closed",
+        "message_kind": "text",
+        "text_sanitized": "Pix da mensalidade caiu",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "none",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "none",
+      "approval_status": "none",
+      "resolver_status": "blocked",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "not_applicable",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "ready"
+  },
+  {
+    "fixture_id": "SCX-FX-013",
+    "case_name": "Dois previews e um pode ambiguo",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [
+        { "preview_id": "preview-fx013-a", "group_jid": "g-barra-financeiro@g.us", "category": "parcela", "payment_method": "pix", "amount_cents": 39000 },
+        { "preview_id": "preview-fx013-b", "group_jid": "g-barra-financeiro@g.us", "category": "lojinha", "payment_method": "dinheiro", "amount_cents": 6000 }
+      ],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000013",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx013-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "pode",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "blocked",
+      "approval_status": "ambiguous",
+      "resolver_status": "blocked",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-014",
+    "case_name": "Pode em outro grupo",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true },
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [
+        { "preview_id": "preview-fx014-001", "group_jid": "g-barra-financeiro@g.us", "category": "parcela", "payment_method": "pix", "amount_cents": 39000 }
+      ],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000014",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx014-001",
+        "quoted_message_id": "preview-fx014-001",
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "quoted_reply",
+        "text_sanitized": "pode",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "denied"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "blocked",
+      "approval_status": "rejected",
+      "resolver_status": "blocked",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-015",
+    "case_name": "Ator desconhecido",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000015",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx015-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-unknown-01",
+        "identity_status": "unresolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "Sol, lance esse Pix R$390",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "none",
+      "write_candidate": "none",
+      "authorization_precheck": "unknown"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "none",
+      "approval_status": "none",
+      "resolver_status": "blocked",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-016",
+    "case_name": "Unidade no texto diverge do grupo",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000016",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx016-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "text",
+        "text_sanitized": "Sol, parcela do Recreio R$390 Pix",
+        "has_media": false,
+        "media_kind": null
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-017",
+    "case_name": "Restart no meio da midia",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-recreio-financeiro@g.us", "unit": "Recreio", "active_financial_route": false }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-recreio-01", "unit": "Recreio", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": [
+        { "media_id": "media-fx017-001", "state": "processing", "artifact_id": "artifact-fx017-001" }
+      ]
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000017",
+        "group_jid": "g-recreio-financeiro@g.us",
+        "message_id": "msg-fx017-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-recreio-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "pdf",
+        "text_sanitized": "Sol, comprovante de parcela R$405",
+        "has_media": true,
+        "media_kind": "pdf"
+      },
+      {
+        "event_id": "00000000-0000-4000-8000-000000000017",
+        "group_jid": "g-recreio-financeiro@g.us",
+        "message_id": "msg-fx017-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-recreio-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "pdf",
+        "text_sanitized": "replay depois de restart",
+        "has_media": true,
+        "media_kind": "pdf"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 2,
+      "logical_event_count": 1,
+      "preview_status": "manual_review",
+      "approval_status": "none",
+      "resolver_status": "manual_review",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": 40500,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-018",
+    "case_name": "PDF documento nao suportado",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-cg-financeiro@g.us", "unit": "Campo Grande", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-cg-01", "unit": "Campo Grande", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000018",
+        "group_jid": "g-cg-financeiro@g.us",
+        "message_id": "msg-fx018-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-cg-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "pdf",
+        "text_sanitized": "Sol, comprovante em PDF sem texto extraivel",
+        "has_media": true,
+        "media_kind": "pdf"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "manual_review",
+      "approval_status": "none",
+      "resolver_status": "manual_review",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": null,
+      "payment_method": "unknown"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "technical_leak",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-019",
+    "case_name": "OCR 429 falta credito",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000019",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx019-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, comprovante Pix R$390 com OCR 429",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "none",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 1,
+      "logical_event_count": 1,
+      "preview_status": "manual_review",
+      "approval_status": "none",
+      "resolver_status": "manual_review",
+      "operation": "manual_review",
+      "category": "unknown",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "technical_leak",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  },
+  {
+    "fixture_id": "SCX-FX-020",
+    "case_name": "Duplicate webhook",
+    "schema_version": "sol_caixa_fixture_v3",
+    "setup": {
+      "canonical_groups": [
+        { "group_jid": "g-barra-financeiro@g.us", "unit": "Barra", "active_financial_route": true }
+      ],
+      "authorized_actors": [
+        { "sender_ref": "sender-barra-01", "unit": "Barra", "operations": ["lancamento_simples"] }
+      ],
+      "initial_previews": [],
+      "initial_media_states": []
+    },
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000020",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx020-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, parcela R$390 Pix",
+        "has_media": true,
+        "media_kind": "image"
+      },
+      {
+        "event_id": "00000000-0000-4000-8000-000000000020",
+        "group_jid": "g-barra-financeiro@g.us",
+        "message_id": "msg-fx020-001",
+        "quoted_message_id": null,
+        "sender_ref": "sender-barra-01",
+        "identity_status": "resolved",
+        "mention_detected": true,
+        "conversation_window": "active",
+        "message_kind": "image",
+        "text_sanitized": "Sol, parcela R$390 Pix",
+        "has_media": true,
+        "media_kind": "image"
+      }
+    ],
+    "expected_decision": {
+      "ingest_decision": "save",
+      "response_decision": "reply",
+      "write_candidate": "await_approval",
+      "authorization_precheck": "allowed"
+    },
+    "expected_final_state": {
+      "event_count": 2,
+      "logical_event_count": 1,
+      "preview_status": "awaiting_approval",
+      "approval_status": "none",
+      "resolver_status": "resolved",
+      "operation": "entrada",
+      "category": "parcela",
+      "amount_cents": 39000,
+      "payment_method": "pix"
+    },
+    "expected_effects": {
+      "db_write_calls": 0,
+      "financial_mutations": 0,
+      "whatsapp_outbound_calls": 0,
+      "duplicate_outbound_calls": 0,
+      "external_media_calls": 0,
+      "restarts": 0
+    },
+    "legacy_comparison": {
+      "legacy_result": "unknown",
+      "legacy_is_oracle": false
+    },
+    "evidence_status": "needs_evidence"
+  }
+]

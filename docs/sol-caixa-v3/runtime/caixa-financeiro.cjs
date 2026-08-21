@@ -2564,7 +2564,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           alvoP.faturaIndisponivel = false;
           alvoP.descricao = _descricaoLancamento('passaporte', alvoP.competencia, alvoP.aluno, alvoP.parcela);
           alvoP.ts = agora;
-          let texto = 'Você tem razão: a categoria é passaporte, não lojinha. Remontei o preview:\n\n' + montarPreview({
+          let texto = 'Ajustei: a categoria é passaporte. Remontei o preview:\n\n' + montarPreview({
             unidadeNome: alvoP.nome, valor: alvoP.valor, forma: alvoP.forma,
             categoria: 'passaporte', aluno: alvoP.aluno, competencia: alvoP.competencia,
             parcela: alvoP.parcela, confiancaBaixa: false,
@@ -2639,7 +2639,7 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           alvoP.ts = agora;
           const abertura = confirmacaoManual
             ? 'Entendi a confirmação da equipe. Remontei o preview com aluno, curso/parcela e competência informados:\n\n'
-            : 'Você tem razão: a categoria é parcela, não lojinha. Remontei o preview:\n\n';
+            : 'Ajustei: a categoria é parcela. Remontei o preview:\n\n';
           let texto = abertura + montarPreview({
             unidadeNome: alvoP.nome, valor: alvoP.valor, forma: alvoP.forma,
             categoria: 'parcela', aluno: alvoP.aluno, competencia,

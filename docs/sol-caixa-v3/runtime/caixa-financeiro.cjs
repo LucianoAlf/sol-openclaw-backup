@@ -89,7 +89,13 @@ function detectarContextoMultiAluno(texto) {
   const pluralidade = /\b(?:dois|2|ambos|mais de um|varios|varias)\s+alun(?:o|os|a|as)\b|\balunos\b|\bpassaportes\b/.test(t);
   const nomesEmConjunto = /\balunos?\b[\s:\-]+[^\n]{3,120}\s+\be\s+[^\n]{3,120}/.test(t)
     || /\b(?:joao|maria|pedro|ana)\b[^\n]{0,80}\s+\be\s+[^\n]{3,80}/.test(t);
-  return pluralidade && (nomesEmConjunto || /\b(?:dois|2|ambos|mais de um)\b/.test(t));
+  // A legenda operacional costuma vir no singular ("Passaporte de João e
+  // Pedro"), mas descreve duas pessoas. Esse é contexto forte de lote: a
+  // regra só roteia para revisão/intent multi e jamais escolhe uma delas.
+  // Mantemos a exigência de categoria financeira + preposição + dois nomes,
+  // para não confundir uma frase genérica contendo "e" com dois alunos.
+  const categoriaComDoisNomes = /\b(?:passaportes?|taxas?\s+de\s+matriculas?|matriculas?|parcelas?|mensalidades?|pagamentos?)\s+(?:de|do|da|dos|das)\s+[a-zà-ÿ]{2,}(?:\s+[a-zà-ÿ]{2,}){1,4}?\s+e\s+[a-zà-ÿ]{2,}(?:\s+[a-zà-ÿ]{2,}){1,4}?(?=\s*(?:[-–—]|r\$|$))/.test(t);
+  return categoriaComDoisNomes || (pluralidade && (nomesEmConjunto || /\b(?:dois|2|ambos|mais de um)\b/.test(t)));
 }
 
 function validarIntencaoMultiAluno(raw, valorComprovante, defaults = {}) {

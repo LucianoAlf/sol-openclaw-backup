@@ -35,6 +35,10 @@ function criar({ multi } = {}) {
 (async () => {
   assert.strictEqual(F.detectarContextoMultiAluno('alunos João e Pedro R$720'), true);
   assert.strictEqual(F.detectarContextoMultiAluno('aluno João R$720'), false);
+  // Caso real: a legenda traz a categoria no singular, mas dois nomes ligados
+  // por "e". Ela deve travar em revisão, nunca seguir para o casador singular.
+  assert.strictEqual(F.detectarContextoMultiAluno('PG Passaporte de João Victor e Pedro Victor - LA CG - R$720,00'), true);
+  assert.strictEqual(F.detectarContextoMultiAluno('pagamento de João e mãe - R$720,00'), false);
 
   const semDivisao = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', itens: [
     { aluno_nome: 'João Victor Ramos Coelho', valor: null }, { aluno_nome: 'Pedro Victor Ramos Coelho', valor: null },
@@ -43,6 +47,13 @@ function criar({ multi } = {}) {
   assert.strictEqual(r1.acao, 'manual_review_multi_student');
   assert.strictEqual(semDivisao.c.previews.length, 0);
   assert.match(semDivisao.c.env[0], /não vou escolher/i);
+
+  const legendaReal = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', itens: [
+    { aluno_nome: 'João Victor', valor: null }, { aluno_nome: 'Pedro Victor', valor: null },
+  ] } });
+  const rReal = await legendaReal.h.handle(baseEvent({ body: 'PG Passaporte de João Victor e Pedro Victor - LA CG - R$720,00' }));
+  assert.strictEqual(rReal.acao, 'manual_review_multi_student');
+  assert.strictEqual(legendaReal.c.previews.length, 0);
 
   const completo = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', competencia: '08/2026', itens: [
     { aluno_nome: 'João Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },

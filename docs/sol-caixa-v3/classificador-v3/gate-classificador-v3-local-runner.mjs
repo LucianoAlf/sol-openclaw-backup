@@ -1,12 +1,15 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = __dirname;
 const fixturesPath = path.join(rootDir, 'sol-caixa-v3-classificador-fixtures.json');
-const reportsDir = rootDir;
-const reportPath = path.join(reportsDir, 'gate-classificador-v3-local-2026-08-21.json');
+const outFlagIndex = process.argv.indexOf('--out');
+const reportPath = outFlagIndex >= 0
+  ? path.resolve(process.argv[outFlagIndex + 1] || '')
+  : path.join(os.tmpdir(), `sol-caixa-v3-classificador-${Date.now()}.json`);
 
 const deterministicRules = [
   {
@@ -169,7 +172,7 @@ function compareExpected(fixture, actual) {
   return errors;
 }
 
-fs.mkdirSync(reportsDir, { recursive: true });
+fs.mkdirSync(path.dirname(reportPath), { recursive: true });
 
 const fixtures = JSON.parse(fs.readFileSync(fixturesPath, 'utf8'));
 const results = fixtures.map((fixture) => {

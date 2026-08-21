@@ -1,4 +1,7 @@
 'use strict';
+process.env.SOL_CAIXA_V3_LEDGER_MODE = 'production';
+process.env.SOL_CAIXA_V3_LEDGER_STRICT = '1';
+process.env.SOL_CAIXA_LOTE_MS = '0';
 const assert = require('assert');
 const F = require('./caixa-financeiro.cjs');
 
@@ -10,14 +13,11 @@ const baseEvent = (overrides = {}) => ({
 });
 
 function criar({ multi } = {}) {
-  process.env.SOL_CAIXA_V3_LEDGER_MODE = 'production';
-  process.env.SOL_CAIXA_V3_LEDGER_STRICT = '1';
-  process.env.SOL_CAIXA_LOTE_MS = '0';
   const c = { env: [], previews: [], approvals: [], lotes: [], singles: [] };
   const h = F.criarHandlerFinanceiro({
     grupos: { [grupo.chatId]: { unidade_id: grupo.unidade_id, nome: grupo.nome } },
     sendFn: async (_chat, text) => { c.env.push(text); return `MSG-${c.env.length}`; },
-    registrarPreviewV3Fn: async (payload) => { c.previews.push(payload); return { ok: true, preview_id: `PV-${c.previews.length}` }; },
+    registrarPreviewV3Fn: async (payload) => { c.previews.push(payload); return { ok: true, preview_id: `PV-${c.previews.length}`, preview_hash: `HASH-${c.previews.length}` }; },
     registrarApprovalV3Fn: async (payload) => { c.approvals.push(payload); return { ok: true, approval_id: `AP-${c.approvals.length}` }; },
     lancarFn: async (payload) => { c.singles.push(payload); return { ok: true, valor: payload.valor, forma: payload.forma }; },
     lancarLoteFn: async (payload) => { c.lotes.push(payload); return { ok: true, lote_id: 'LOTE-1', movimentacoes: payload.itens.map((i, n) => ({ movimentacao_id: `MOV-${n + 1}`, aluno_nome: i.aluno_nome, valor: i.valor })) }; },
@@ -35,6 +35,16 @@ function criar({ multi } = {}) {
 (async () => {
   assert.strictEqual(F.detectarContextoMultiAluno('alunos João e Pedro R$720'), true);
   assert.strictEqual(F.detectarContextoMultiAluno('aluno João R$720'), false);
+  const totalDoComprovanteVenceLlm = F.validarIntencaoMultiAluno({
+    valor_total: 20,
+    forma: 'pix', categoria: 'passaporte',
+    itens: [
+      { aluno_nome: 'João Victor Ramos Coelho', valor: null },
+      { aluno_nome: 'Pedro Victor Ramos Coelho', valor: null },
+    ],
+  }, 720, { forma: 'pix', categoria: 'passaporte' });
+  assert.strictEqual(totalDoComprovanteVenceLlm.ok, true);
+  assert.strictEqual(totalDoComprovanteVenceLlm.valor_total, 720);
 
   const semDivisao = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', itens: [
     { aluno_nome: 'João Victor Ramos Coelho', valor: null }, { aluno_nome: 'Pedro Victor Ramos Coelho', valor: null },
@@ -51,7 +61,7 @@ function criar({ multi } = {}) {
     { aluno_nome: 'João Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },
     { aluno_nome: 'Pedro Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },
   ] } });
-  const r2 = await completo.h.handle(baseEvent({ body: 'PG pix passaportes alunos João Victor Ramos Coelho e Pedro Victor Ramos Coelho — R$ 360,00 + R$ 360,00 = R$ 720,00' }));
+  const r2 = await completo.h.handle(baseEvent());
   assert.strictEqual(r2.acao, 'preview_multi_aluno_enviado');
   assert.strictEqual(completo.c.previews.length, 1);
   assert.strictEqual(completo.c.previews[0].operacao, 'entrada');

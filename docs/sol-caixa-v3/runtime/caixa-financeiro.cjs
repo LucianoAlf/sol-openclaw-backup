@@ -101,7 +101,10 @@ function detectarContextoMultiAluno(texto) {
 function validarIntencaoMultiAluno(raw, valorComprovante, defaults = {}) {
   if (!raw || typeof raw !== 'object') return { ok: false, motivo: 'intencao_ausente' };
   const itensRaw = Array.isArray(raw.itens) ? raw.itens : [];
-  const total = Number(raw.valor_total || valorComprovante || 0);
+  // O valor do comprovante vem do OCR/visão e é a evidência financeira
+  // observada. A interpretação livre só pode completar campos textuais;
+  // nunca pode substituir esse total (ex.: 720 virar 20 por erro de LLM).
+  const total = Number(valorComprovante || raw.valor_total || 0);
   const categoriaPadrao = String(raw.categoria || defaults.categoria || '').toLowerCase() || null;
   const forma = String(raw.forma || defaults.forma || '').toLowerCase() || null;
   const competenciaPadrao = raw.competencia || defaults.competencia || null;

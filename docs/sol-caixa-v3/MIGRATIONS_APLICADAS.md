@@ -2,7 +2,7 @@
 
 Banco alvo: LA Report.
 
-Este arquivo registra as migrations relevantes aplicadas durante o trabalho do Caixa V3. O SQL exato deve ser recuperado do historico de migrations do Supabase/LA Report quando for consolidado no repositorio canonico do LA Report. Este repositorio da Sol guarda o manifesto porque o runtime da Sol depende dessas RPCs/tabelas.
+Este arquivo registra as migrations relevantes aplicadas durante o trabalho do Caixa V3. O SQL canônico nasce no repositório **LA Report** (`supabase/migrations/`); este manifesto é apenas o espelho de dependências do runtime da Sol. Nunca reaplicar pelo runtime da Sol uma migration já versionada/aplicada pelo LA Report.
 
 ## Caixa base e operacao
 
@@ -53,6 +53,21 @@ Este arquivo registra as migrations relevantes aplicadas durante o trabalho do C
 - `20260821093700` — `sol_caixa_v3_guard_corrigir_estornar_movimento`
 - `20260821094101` — `sol_caixa_v3_disable_legacy_corrigir_forma_rpc_for_sol`
 - `20260821094848` — `harden_sol_caixa_shadow_preview_writer_v3`
+
+## LA Report canônico — 22/08/2026
+
+As cinco migrations abaixo já estão aplicadas no banco e versionadas no LA Report. Referência de código: `origin/main` do LA Report, PRs #191, #193, #194 e #195.
+
+- `20260822120000` — `sol_caixa_destrava_canonicas_via_wrappers_jwt` (PR #191): `parcela_canonica`, `resolver_multi_aluno_v1` e `inadimplentes` passam pelos wrappers canônicos, eliminando o 42501 por claim ausente.
+- `20260822121500` — `sol_caixa_casar_parcela_date_aware` (PR #191): valor de parcela passa a respeitar pontualidade, desconto condicional e atraso.
+- `20260822151500` — `caixa_movimentacoes_vinculo_aluno_fatura_e_grants_sol` (PR #193): adiciona os vínculos estruturados `aluno_id`/`fatura_id` e os preenche nos lançamentos permitidos.
+- `20260822170000` — `reverte_grants_que_desfaziam_fail_closed_v3_sol` (PR #194): restaura o fail-closed do V3; a correção legada de forma não volta a ser executável pela Sol.
+- `20260822180000` — `sol_caixa_multi_aluno_snapshot_v2_merged` (PR #195): preview resolve uma vez; o `pode` valida o mesmo snapshot de fatura/valor/competência sem reescolha.
+
+### Regra de substituição
+
+- A draft local `20260821_multi_aluno_derivacao_canonica.sql` foi absorvida e **não deve ser aplicada**. Ela é histórica; a fonte correta é `20260822180000_sol_caixa_multi_aluno_snapshot_v2_merged.sql` no LA Report.
+- Migrations futuras de `sol_caixa_*` nascem no LA Report; este arquivo recebe somente o espelho com versão, nome, PR e dependência do runtime.
 
 ## Observacao
 

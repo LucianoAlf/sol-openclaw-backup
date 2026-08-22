@@ -12,7 +12,7 @@ const baseEvent = (overrides = {}) => ({
   senderId: '5521999999999@c.us', senderPhone: '5521999999999', senderName: 'Operador', ...overrides,
 });
 
-function criar({ multi } = {}) {
+function criar({ multi, loteResultado } = {}) {
   const c = { env: [], previews: [], approvals: [], lotes: [], singles: [] };
   const h = F.criarHandlerFinanceiro({
     grupos: { [grupo.chatId]: { unidade_id: grupo.unidade_id, nome: grupo.nome } },
@@ -20,7 +20,14 @@ function criar({ multi } = {}) {
     registrarPreviewV3Fn: async (payload) => { c.previews.push(payload); return { ok: true, preview_id: `PV-${c.previews.length}`, preview_hash: `HASH-${c.previews.length}` }; },
     registrarApprovalV3Fn: async (payload) => { c.approvals.push(payload); return { ok: true, approval_id: `AP-${c.approvals.length}` }; },
     lancarFn: async (payload) => { c.singles.push(payload); return { ok: true, valor: payload.valor, forma: payload.forma }; },
-    lancarLoteFn: async (payload) => { c.lotes.push(payload); return { ok: true, lote_id: 'LOTE-1', movimentacoes: payload.itens.map((i, n) => ({ movimentacao_id: `MOV-${n + 1}`, aluno_nome: i.aluno_nome, valor: i.valor })) }; },
+    lancarLoteFn: async (payload) => {
+      c.lotes.push(payload);
+      return loteResultado || {
+        ok: true,
+        lote_id: 'LOTE-1',
+        movimentacoes: payload.itens.map((i, n) => ({ movimentacao_id: `MOV-${n + 1}`, aluno_nome: i.aluno_nome, valor: i.valor })),
+      };
+    },
     ocrFn: async () => 'Comprovante Pix realizado Valor R$ 720,00', visaoFn: async () => null,
     interpretarFn: async () => ({ categoria: 'passaporte', aluno: null, competencia: '08/2026', forma: 'pix' }),
     interpretarMultiFn: async () => multi,
@@ -73,5 +80,16 @@ function criar({ multi } = {}) {
   assert.strictEqual(completo.c.lotes.length, 1);
   assert.strictEqual(completo.c.singles.length, 0);
   assert.strictEqual(completo.c.lotes[0].itens.length, 2);
-  console.log('3/3 testes ok');
+
+  const caixaNaoAberto = criar({ multi: { tipo_recebimento: 'multi_aluno', valor_total: 720, forma: 'pix', categoria: 'passaporte', competencia: '08/2026', itens: [
+    { aluno_nome: 'João Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },
+    { aluno_nome: 'Pedro Victor Ramos Coelho', valor: 360, competencia: '08/2026', categoria: 'passaporte' },
+  ] }, loteResultado: { ok: false, motivo: 'caixa_nao_aberto' } });
+  const r4 = await caixaNaoAberto.h.handle(baseEvent({ messageId: 'IMG-CAIXA-NAO-ABERTO' }));
+  assert.strictEqual(r4.acao, 'preview_multi_aluno_enviado');
+  const r5 = await caixaNaoAberto.h.handle(baseEvent({ messageId: 'PODE-CAIXA-NAO-ABERTO', hasMedia: false, mediaUrls: [], body: 'pode', quotedMessageId: 'MSG-1' }));
+  assert.strictEqual(r5.acao, 'lote_multi_recusado');
+  assert.match(caixaNaoAberto.c.env.at(-1), /caixa da Campo Grande ainda não está aberto/);
+  assert.doesNotMatch(caixaNaoAberto.c.env.at(-1), /fatura não confere/);
+  console.log('4/4 testes ok');
 })().catch((e) => { console.error(e); process.exitCode = 1; });

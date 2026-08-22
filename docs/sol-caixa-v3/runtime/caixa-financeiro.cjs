@@ -3200,9 +3200,24 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
           log({ acao: 'lote_multi_lancado', chatId, lote_id: lote.lote_id, itens: alvo.itens.length });
           return { acao: 'lote_multi_lancado', lote_id: lote.lote_id };
         }
-        await sendFn(chatId, '⚠️ Não lancei o lote: a validação final mudou ou alguma fatura não confere. Nada foi lançado parcialmente. Reenvia para gerar um preview novo.');
-        log({ acao: 'lote_multi_recusado', chatId, motivo: lote && lote.motivo });
-        return { acao: 'lote_multi_recusado', motivo: lote && lote.motivo };
+        if (lote && lote.motivo === 'caixa_nao_aberto') {
+          await sendFn(chatId, `⚠️ O caixa da ${alvo.nome} ainda não está aberto. O lote está conferido, mas não pode ser lançado agora. Nada foi lançado parcialmente. Gere um preview novo quando o caixa estiver aberto.`);
+          log({ acao: 'lote_multi_recusado', chatId, motivo: lote.motivo });
+          return { acao: 'lote_multi_recusado', motivo: lote.motivo };
+        }
+        const motivoLote = lote && lote.motivo;
+        const motivoHumano = {
+          snapshot_fatura_nao_encontrada: 'a fatura canônica do preview não está disponível na fonte oficial',
+          snapshot_status_fatura_mudou: 'o status de uma fatura mudou desde o preview',
+          snapshot_valor_fatura_mudou: 'o valor de uma fatura mudou desde o preview',
+          snapshot_categoria_mudou: 'a categoria de uma fatura mudou desde o preview',
+          snapshot_competencia_mudou: 'a competência de uma fatura mudou desde o preview',
+          snapshot_soma_divergente: 'a soma das faturas não confere com o total',
+          fonte_indisponivel: 'a fonte oficial de faturas está indisponível',
+        }[motivoLote] || 'a validação final não reproduziu o preview';
+        await sendFn(chatId, `⚠️ Não lancei o lote: ${motivoHumano}. Nada foi lançado parcialmente. O preview original foi preservado; não precisa reenviar o comprovante.`);
+        log({ acao: 'lote_multi_recusado', chatId, motivo: motivoLote });
+        return { acao: 'lote_multi_recusado', motivo: motivoLote };
       }
       if (alvo.divisao && alvo.divisao.length >= 2) {
         const linhas = alvo.divisao.map((p) => `• ${p.label}: ${fmtBRL(p.valor)}`).join('\n');

@@ -16,6 +16,8 @@ function handler(capt, extra = {}) {
   return F.criarHandlerFinanceiro({
     grupos: { 'g@g.us': { unidade_id: 'U-CG', nome: 'Campo Grande' } },
     sendFn: async (c, txt) => { capt.env.push(txt); return 'PV' + capt.env.length; },
+    registrarPreviewV3Fn: async () => ({ ok: true, preview_id: 'V3-PREVIEW', preview_hash: 'V3-HASH' }),
+    registrarApprovalV3Fn: async () => ({ ok: true, approval_id: 'V3-APPROVAL' }),
     lancarFn: async (payload) => { capt.lancamentos.push(payload); return { ok: true, valor: Number(payload.valor), forma: payload.forma, movimentacao_id: 'M1' }; },
     ocrFn: async () => 'COMPROVANTE PIX\nVALOR R$667,00\nPAGO',
     visaoFn: async () => null,

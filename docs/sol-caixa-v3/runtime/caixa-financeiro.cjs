@@ -632,31 +632,6 @@ function lancarSaidaCaixa(payload, { url, key } = carregarEnv()) {
   });
 }
 
-function corrigirFormaRecebimento(payload, { url, key } = carregarEnv()) {
-  return new Promise((resolve, reject) => {
-    if (!key) return reject(new Error('missing SUPABASE service key'));
-    const body = JSON.stringify({ p_payload: payload });
-    const u = new URL(`${url}/rest/v1/rpc/sol_caixa_corrigir_forma_recebimento`);
-    const req = https.request({
-      hostname: u.hostname, path: u.pathname, method: 'POST',
-      headers: {
-        'apikey': key, 'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body),
-      },
-    }, (res) => {
-      let data = '';
-      res.on('data', (c) => { data += c; });
-      res.on('end', () => {
-        try { resolve(data ? JSON.parse(data) : null); }
-        catch (e) { reject(new Error(`resposta invalida (${res.statusCode})`)); }
-      });
-    });
-    req.on('error', reject);
-    req.setTimeout(15000, () => req.destroy(new Error('timeout RPC corrigir')));
-    req.write(body); req.end();
-  });
-}
-
 function buscarLancamentoParaCorrecao(payload, { url, key } = carregarEnv()) {
   return new Promise((resolve, reject) => {
     if (!key) return reject(new Error('missing SUPABASE service key'));
@@ -776,6 +751,13 @@ function resolverMultiAlunoCaixaV1(payload, { url, key } = carregarEnv()) {
 
 function lancarRecebimentoLote(payload, env) {
   return chamarRpcCaixa('sol_caixa_lancar_recebimento_lote_v1', payload, env);
+}
+
+// Composição do MESMO aluno é resolvida no LA Report. O bridge não lê alunos
+// nem emusys_faturas diretamente: nome, competência e total são apenas sinais;
+// a RPC canônica escolhe os itens ou bloqueia a ambiguidade.
+function resolverCompostoAlunoCaixaV1(payload, env) {
+  return chamarRpcCaixa('sol_caixa_resolver_composto_aluno_v1', payload, env);
 }
 
 function extrairCorrecaoForma(text) {
@@ -1620,36 +1602,24 @@ function descricaoDoComposto(composto, aluno) {
   return `Parcelas${comp}${cursos ? ' ' + cursos : ''}${aluno ? ' - ' + aluno : ''}`;
 }
 
-function restGetJson(path, { url, key } = carregarEnv(), { timeout = 12000 } = {}) {
-  return new Promise((resolve) => {
-    if (!key || !url) return resolve(null);
-    let u;
-    try { u = new URL(`${String(url).replace(/\/+$/, '')}${path}`); } catch (e) { return resolve(null); }
-    const req = https.request({
-      hostname: u.hostname, path: u.pathname + u.search, method: 'GET',
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    }, (res) => {
-      let data = '';
-      res.on('data', (c) => { data += c; });
-      res.on('end', () => { try { resolve(data ? JSON.parse(data) : null); } catch (e) { resolve(null); } });
-    });
-    req.on('error', () => resolve(null));
-    req.setTimeout(timeout, () => req.destroy());
-    req.end();
-  });
-}
-
 async function buscarCompostoFaturasMes(unidadeId, aluno, competencia, valor, env = carregarEnv()) {
   const iso = competenciaIso(competencia);
   if (!unidadeId || !aluno || !iso) return null;
   const nome = String(aluno).replace(/\s+/g, ' ').trim();
   if (!nome) return null;
-  const alunos = await restGetJson(`/rest/v1/alunos?select=id,nome,emusys_student_id&unidade_id=eq.${encodeURIComponent(unidadeId)}&nome=ilike.*${encodeURIComponent(nome)}*&limit=5`, env);
-  const alunoRow = Array.isArray(alunos) ? alunos.find((a) => a && a.emusys_student_id) : null;
-  if (!alunoRow) return null;
-  const rows = await restGetJson(`/rest/v1/emusys_faturas?select=id,descricao,status,competencia,data_vencimento,data_pagamento,valor_original,valor_pago,desconto_aplicado,payload&emusys_student_id=eq.${encodeURIComponent(alunoRow.emusys_student_id)}&competencia=eq.${encodeURIComponent(iso)}&order=descricao.asc`, env);
-  const composto = compostoDeFaturas(rows, valor, competencia, alunoRow.nome || aluno);
-  return composto;
+  const r = await resolverCompostoAlunoCaixaV1({
+    unidade_id: unidadeId,
+    aluno_nome: nome,
+    competencia: iso,
+    valor_total: valor,
+  }, env);
+  if (!r || !r.ok || !Array.isArray(r.partes) || r.partes.length < 2) return null;
+  return {
+    ok: true,
+    aluno_nome: r.aluno_nome || nome,
+    competencia: r.competencia || extrairCompetenciaTexto(competencia),
+    partes: r.partes,
+  };
 }
 
 function _descricaoLancamento(categoria, competencia, aluno, parcela) {
@@ -1672,7 +1642,7 @@ function categoriaEhSaida(categoria) {
   return ['seguranca', 'despesa', 'retirada', 'troco'].includes(String(categoria || '').toLowerCase());
 }
 
-function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, lancarLoteFn = lancarRecebimentoLote, lancarSaidaFn = lancarSaidaCaixa, corrigirFormaFn = corrigirFormaRecebimento, buscarCorrecaoFn = buscarLancamentoParaCorrecao, buscarMovimentosFn = buscarMovimentosCaixa, corrigirMovimentoFn = corrigirMovimentoCaixa, estornarMovimentoFn = estornarMovimentoCaixa, registrarPreviewV3Fn = registrarPreviewV3, registrarApprovalV3Fn = registrarApprovalV3, visaoFn = extrairComprovanteVisao, ocrFn = ocrLocal, interpretarFn = interpretarComprovante, interpretarMultiFn = interpretarMultiAluno, resolverMultiFn = resolverMultiAlunoCaixaV1, casarFn = casarParcela, responsavelFn = buscarResponsavel, pagadorFn = identificarPorPagador, canonicaFn = casarParcelaCanonica, faturasMesFn = buscarCompostoFaturasMes, duplicataFn = jaLancadoHoje, identidadeFn = identificarPessoa, resumoFn = resumoDoDia, log = () => {}, janelaMs = 30 * 60 * 1000, dryRun = (process.env.SOL_CAIXA_DRYRUN === '1') }) {
+function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, lancarLoteFn = lancarRecebimentoLote, lancarSaidaFn = lancarSaidaCaixa, buscarCorrecaoFn = buscarLancamentoParaCorrecao, buscarMovimentosFn = buscarMovimentosCaixa, corrigirMovimentoFn = corrigirMovimentoCaixa, estornarMovimentoFn = estornarMovimentoCaixa, registrarPreviewV3Fn = registrarPreviewV3, registrarApprovalV3Fn = registrarApprovalV3, visaoFn = extrairComprovanteVisao, ocrFn = ocrLocal, interpretarFn = interpretarComprovante, interpretarMultiFn = interpretarMultiAluno, resolverMultiFn = resolverMultiAlunoCaixaV1, casarFn = casarParcela, responsavelFn = buscarResponsavel, pagadorFn = identificarPorPagador, canonicaFn = casarParcelaCanonica, faturasMesFn = buscarCompostoFaturasMes, duplicataFn = jaLancadoHoje, identidadeFn = identificarPessoa, resumoFn = resumoDoDia, log = () => {}, janelaMs = 30 * 60 * 1000, dryRun = (process.env.SOL_CAIXA_DRYRUN === '1') }) {
   // grupos: { [chatId]: { unidade_id, nome } }
   const pendentes = new Map();   // chatId -> [ {previewId, unidade_id, nome, valor, forma, categoria, aluno, idemKey, origem, ts} ]
   const lancadosRecentes = new Map(); // chatId -> [ {confirmMessageId, movimentacao_id, unidade_id, nome, valor, forma, ts} ]
@@ -2690,19 +2660,9 @@ function criarHandlerFinanceiro({ grupos, sendFn, lancarFn = lancarRecebimento, 
             log({ acao: 'correcao_forma_preview_enviado', movimentacao_id: alvoL.movimentacao_id, forma: corrForma.forma });
             return { acao: 'correcao_forma_preview_enviado', movimentacao_id: alvoL.movimentacao_id, forma: corrForma.forma };
           }
-          let rCorr;
-          try { rCorr = await corrigirFormaFn(payloadCorr); }
-          catch (e) { await sendFn(chatId, '⚠️ Deu erro técnico ao corrigir a forma. Já registrei o problema.'); log({ acao: 'erro_rpc_corrigir_forma', erro: String(e && e.message) }); return { acao: 'erro_corrigir_forma' }; }
-          if (rCorr && rCorr.ok) {
-            alvoL.forma = rCorr.forma || corrForma.forma;
-            alvoL.cartaoModalidade = rCorr.cartao_modalidade || null;
-            await sendFn(chatId, `Corrigi no caixa: ${fmtBRL(rCorr.valor)} agora está como *${rCorr.forma === 'cartao' ? 'cartão' : rCorr.forma}*.`);
-            log({ acao: 'forma_corrigida', movimentacao_id: alvoL.movimentacao_id, forma: alvoL.forma });
-            return { acao: 'forma_corrigida', movimentacao_id: alvoL.movimentacao_id, forma: alvoL.forma };
-          }
-          await sendFn(chatId, `⚠️ Não consegui corrigir: ${rCorr && rCorr.motivo ? rCorr.motivo : 'erro desconhecido'}.`);
-          log({ acao: 'forma_correcao_recusada', motivo: rCorr && rCorr.motivo });
-          return { acao: 'forma_correcao_recusada', motivo: rCorr && rCorr.motivo };
+          await sendFn(chatId, '⚠️ Não corrigi: a correção de forma exige o preview V3 com aprovação. Reenvia o pedido em instantes.');
+          log({ acao: 'correcao_forma_bloqueada_sem_v3', movimentacao_id: alvoL.movimentacao_id });
+          return { acao: 'correcao_forma_bloqueada_sem_v3' };
           }
         }
       }
@@ -3350,7 +3310,7 @@ function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slic
 
 module.exports = {
   parseBRMoney, extrairValor, extrairForma, detectarComprovante, casarPode,
-  montarPreview, montarPreviewMultiAluno, fmtBRL, carregarEnv, lancarRecebimento, lancarRecebimentoLote, resolverMultiAlunoCaixaV1, lancarSaidaCaixa, corrigirFormaRecebimento, buscarLancamentoParaCorrecao,
+  montarPreview, montarPreviewMultiAluno, fmtBRL, carregarEnv, lancarRecebimento, lancarRecebimentoLote, resolverMultiAlunoCaixaV1, resolverCompostoAlunoCaixaV1, lancarSaidaCaixa, buscarLancamentoParaCorrecao,
   buscarMovimentosCaixa, corrigirMovimentoCaixa, estornarMovimentoCaixa, registrarPreviewV3, registrarApprovalV3, criarHandlerFinanceiro,
   confirmacaoLimpa, classificarMidia, bodyLimpo, nomeDoAtor, buscarResponsavel, mesmaPessoa, pagamentoMultiplo,
   extrairDivisaoPagamento, extrairSomaAditivaPagamento, extrairAdicionalPagamento, detectarLojinhaProduto, detectarContextoMultiAluno, validarIntencaoMultiAluno,
